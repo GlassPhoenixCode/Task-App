@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Task Forge v3</title>
+<meta name="theme-color" content="#6c8fff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Task Forge">
+<meta name="description" content="Gamified task manager — your quests, your victories">
+<link rel="manifest" id="pwa-manifest-link">
+<title>Task Forge</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════
@@ -702,7 +709,33 @@ textarea.exp-input { resize:vertical; min-height:54px; }
 .tag-filter-chip.active { background:var(--active-color); color:#000; border-color:var(--active-color); }
 #tag-filter-row { display:flex; flex-wrap:wrap; gap:5px; padding:0 0 10px; }
 
-/* ── INLINE TITLE EDITING ── */
+/* ── QUICK SORT BAR ── */
+.quick-sort-bar {
+  display:flex; align-items:center; gap:6px;
+  margin-bottom:16px; flex-wrap:wrap;
+}
+.qs-label {
+  font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+  letter-spacing:2px; color:var(--text-muted); text-transform:uppercase;
+  flex-shrink:0; margin-right:2px;
+}
+.qs-btn {
+  font-family:'Syne',sans-serif; font-size:0.75rem; font-weight:700;
+  background:var(--surface3); border:1px solid var(--border2);
+  border-radius:999px; color:var(--text-muted);
+  padding:5px 12px; cursor:pointer; transition:all 0.15s;
+  display:flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.qs-btn:hover { background:var(--surface4); color:var(--text); border-color:var(--active-color); }
+.qs-btn.active {
+  background:var(--active-color); color:#000;
+  border-color:var(--active-color);
+  box-shadow:0 2px 10px var(--active-glow);
+}
+@media(max-width:860px){
+  .qs-label-text { display:none; }
+  .qs-btn { padding:5px 9px; font-size:0.8rem; }
+}
 .task-title-input {
   flex:1;
   background:var(--surface3);
@@ -1074,6 +1107,593 @@ select option { background:#17171f; }
   .mobile-filter-fab { display:none; }
   .mobile-filter-drawer { display:none !important; }
 }
+/* ═══════════════════════════════════════════════════
+   GLOBAL CREATE FAB
+═══════════════════════════════════════════════════ */
+#global-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--active-color);
+  color: #000;
+  border: none;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 8500;
+  box-shadow: 0 4px 20px var(--active-glow), 0 2px 8px rgba(0,0,0,0.4);
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s, background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#global-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 28px var(--active-glow), 0 4px 12px rgba(0,0,0,0.4);
+}
+#global-fab:active { transform: scale(0.95); }
+#global-fab.open {
+  background: var(--p-urgent);
+  transform: rotate(45deg);
+}
+
+/* ── CREATE MODAL ── */
+#modal-create .modal {
+  max-width: 560px;
+  max-height: 92vh;
+}
+.create-type-toggle {
+  display: flex;
+  gap: 0;
+  background: var(--surface3);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.create-type-btn {
+  flex: 1;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  padding: 9px 12px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.create-type-btn.active {
+  background: var(--active-color);
+  color: #000;
+  box-shadow: 0 2px 10px var(--active-glow);
+}
+
+/* Tab selector grid */
+.create-tab-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.create-tab-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface3);
+  color: var(--text-muted);
+}
+.create-tab-btn.active {
+  color: #000;
+  border-color: transparent;
+}
+
+/* Create form fields */
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.create-field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.create-input {
+  width: 100%;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.create-input:focus {
+  border-color: var(--active-color);
+  box-shadow: 0 0 0 3px var(--active-glow2);
+}
+.create-input::placeholder { color: var(--text-muted); }
+textarea.create-input { resize: vertical; min-height: 60px; }
+.create-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.create-input-row .span2 { grid-column: 1 / -1; }
+
+/* NLP preview in create modal */
+.create-nlp-preview {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--active-color);
+  padding: 4px 8px;
+  background: var(--active-glow2);
+  border-radius: var(--radius-xs);
+  display: none;
+  margin-top: -4px;
+}
+.create-nlp-preview.visible { display: block; }
+
+/* Priority row */
+.create-priority-row {
+  display: flex;
+  gap: 6px;
+}
+.create-pri-btn {
+  flex: 1;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-xs);
+  padding: 6px 4px;
+  cursor: pointer;
+  background: var(--surface3);
+  color: var(--text-muted);
+  transition: all 0.15s;
+  text-align: center;
+}
+.create-pri-btn.active { color: #000; border-color: transparent; }
+.create-pri-btn[data-pri="urgent"].active { background: var(--p-urgent); }
+.create-pri-btn[data-pri="high"].active   { background: var(--p-high); }
+.create-pri-btn[data-pri="medium"].active { background: var(--p-medium); }
+.create-pri-btn[data-pri="low"].active    { background: var(--p-low); }
+
+/* Boss toggle in create modal */
+.create-boss-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface3);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.create-boss-row.active { border-color: var(--p-urgent); background: rgba(255,59,92,0.08); }
+.create-boss-label { font-size: 0.82rem; font-weight: 600; flex: 1; }
+
+/* Submit button */
+.create-submit-btn {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  background: var(--active-color);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+  box-shadow: 0 4px 16px var(--active-glow);
+  margin-top: 4px;
+}
+.create-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--active-glow); }
+.create-submit-btn:active { transform: translateY(0); }
+
+/* Alarm row */
+.create-alarm-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.alarm-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  background: rgba(108,143,255,0.15);
+  border: 1px solid rgba(108,143,255,0.3);
+  color: var(--active-color);
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.alarm-pill button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0;
+}
+
+/* Reposition mobile filter FAB so it doesn't collide with global FAB */
+@media(max-width:860px) {
+  .mobile-filter-fab {
+    bottom: 94px !important;
+    right: 24px;
+  }
+}
+.cal-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.cal-month-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
+  letter-spacing:4px; color:var(--active-color);
+}
+.cal-nav-btn {
+  background:var(--surface3); border:1px solid var(--border2);
+  border-radius:var(--radius-xs); color:var(--text-mid);
+  padding:7px 14px; cursor:pointer; font-size:1rem;
+  transition:all 0.15s;
+}
+.cal-nav-btn:hover { background:var(--surface4); color:var(--text); border-color:var(--active-color); }
+
+.cal-grid {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  gap:3px; margin-bottom:20px;
+}
+.cal-day-name {
+  font-family:'JetBrains Mono',monospace; font-size:0.6rem;
+  letter-spacing:2px; color:var(--text-muted);
+  text-align:center; padding:6px 0; text-transform:uppercase;
+}
+.cal-cell {
+  min-height:72px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:var(--radius-xs);
+  padding:5px; cursor:pointer; transition:all 0.15s;
+  overflow:hidden; position:relative;
+}
+.cal-cell:hover { background:var(--surface3); border-color:var(--active-color); }
+.cal-cell.today { border-color:var(--active-color); background:var(--active-glow2); }
+.cal-cell.today .cal-day-num { color:var(--active-color); font-weight:800; }
+.cal-cell.other-month { opacity:0.35; }
+.cal-cell.weekend-cell {
+  background: var(--surface3);
+}
+.cal-cell.weekend-cell:hover { background:var(--surface4); }
+.cal-day-name.weekend-name {
+  color: var(--text-mid);
+  opacity: 0.6;
+}
+/* Subtle left border to visually separate the weekend columns */
+.cal-grid > *:nth-child(7n+6),
+.cal-grid > *:nth-child(7n+7) {
+  border-left: 1px solid var(--border2);
+}
+.cal-cell.selected { border-color:var(--xp-color); box-shadow:0 0 0 2px var(--xp-color); }
+.cal-day-num {
+  font-family:'JetBrains Mono',monospace; font-size:0.72rem;
+  color:var(--text-muted); margin-bottom:3px; font-weight:600;
+}
+.cal-task-dots { display:flex; flex-wrap:wrap; gap:2px; }
+.cal-dot {
+  width:100%; font-size:0.56rem; font-weight:600;
+  padding:1px 4px; border-radius:3px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  line-height:1.4;
+}
+.cal-dot.urgent { border-left:2px solid var(--p-urgent); }
+.cal-dot.high   { border-left:2px solid var(--p-high); }
+
+.cal-day-panel {
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius); padding:18px; margin-bottom:20px;
+  display:none;
+}
+.cal-day-panel.open { display:block; animation:slideDown 0.2s ease; }
+.cal-day-panel-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+  letter-spacing:3px; color:var(--active-color); margin-bottom:12px;
+}
+.cal-day-task-list { display:flex; flex-direction:column; gap:6px; }
+.cal-day-task {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:var(--surface3);
+  border-radius:var(--radius-xs); border-left:3px solid var(--border2);
+  cursor:pointer; transition:background 0.15s;
+}
+.cal-day-task:hover { background:var(--surface4); }
+.cal-day-task-title { flex:1; font-size:0.83rem; font-weight:600; }
+.cal-day-task-meta { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--text-muted); }
+
+.cal-unscheduled { margin-top:8px; }
+.cal-unscheduled-title {
+  font-family:'JetBrains Mono',monospace; font-size:0.6rem;
+  letter-spacing:2px; color:var(--text-muted); text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+/* Notification scheduling in task expand */
+.notif-schedule-row {
+  display:flex; gap:7px; align-items:center; flex-wrap:wrap;
+}
+.notif-schedule-row input[type="datetime-local"] {
+  flex:1; background:var(--surface3); border:1px solid var(--border);
+  border-radius:var(--radius-xs); padding:6px 9px;
+  color:var(--text); font-family:'Syne',sans-serif; font-size:0.78rem; outline:none;
+}
+.notif-schedule-row input:focus { border-color:var(--active-color); }
+.notif-sched-btn {
+  font-family:'Syne',sans-serif; font-size:0.72rem; font-weight:700;
+  background:var(--surface3); border:1px solid var(--border2);
+  border-radius:var(--radius-xs); color:var(--text-muted);
+  padding:6px 11px; cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.notif-sched-btn:hover { background:var(--surface4); color:var(--active-color); border-color:var(--active-color); }
+.notif-sched-btn.active { background:var(--active-color); color:#000; border-color:var(--active-color); }
+.scheduled-notif-pill {
+  font-family:'JetBrains Mono',monospace; font-size:0.6rem;
+  background:rgba(108,143,255,0.15); border:1px solid rgba(108,143,255,0.3);
+  color:var(--active-color); padding:3px 8px; border-radius:999px;
+  display:flex; align-items:center; gap:5px;
+}
+.scheduled-notif-pill button {
+  background:none; border:none; color:inherit; cursor:pointer; font-size:0.7rem; padding:0;
+}
+
+/* PWA install banner */
+#pwa-banner {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--surface3),var(--surface4));
+  border:1px solid var(--active-color);
+  border-radius:var(--radius); padding:14px 20px;
+  display:none; align-items:center; gap:14px;
+  z-index:8003; box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  min-width:280px; max-width:360px;
+  animation:snackIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+#pwa-banner.visible { display:flex; }
+.pwa-banner-text { flex:1; font-size:0.82rem; color:var(--text-mid); line-height:1.4; }
+.pwa-banner-title { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:2px; color:var(--active-color); margin-bottom:2px; }
+.pwa-install-btn {
+  font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:2px;
+  background:var(--active-color); color:#000; border:none;
+  border-radius:var(--radius-xs); padding:8px 16px; cursor:pointer;
+  white-space:nowrap; transition:all 0.15s; flex-shrink:0;
+}
+.pwa-install-btn:hover { opacity:0.85; }
+.pwa-dismiss-btn {
+  background:none; border:none; color:var(--text-muted);
+  cursor:pointer; font-size:1.1rem; flex-shrink:0;
+}
+
+@media(max-width:860px){
+  .cal-cell { min-height:52px; }
+  .cal-dot { display:none; }
+  .cal-cell .cal-dot:first-child { display:block; }
+  .cal-day-num { font-size:0.65rem; }
+  .cal-task-dots::after {
+    content:attr(data-count);
+    font-size:0.55rem; color:var(--text-muted);
+    font-family:'JetBrains Mono',monospace;
+  }
+}
+/* ── EVENT BARS (multi-day spanning) ── */
+.cal-event-bar {
+  width:100%; font-size:0.55rem; font-weight:700;
+  padding:2px 5px; border-radius:3px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  line-height:1.5; margin-bottom:1px; cursor:pointer;
+  transition:opacity 0.15s;
+}
+.cal-event-bar:hover { opacity:0.8; }
+.cal-event-bar.timed::before { content:'⏱ '; }
+.cal-event-bar.multiday-start { border-radius:3px 0 0 3px; }
+.cal-event-bar.multiday-mid   { border-radius:0; }
+.cal-event-bar.multiday-end   { border-radius:0 3px 3px 0; }
+
+/* ── QUICK ADD PANEL ── */
+.cal-quick-add {
+  background:var(--surface2); border:1px solid var(--active-color);
+  border-radius:var(--radius); padding:16px; margin-bottom:14px;
+  animation:slideDown 0.2s ease; position:relative;
+}
+.cal-quick-add-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1rem;
+  letter-spacing:3px; color:var(--active-color); margin-bottom:12px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.cal-quick-add-close {
+  background:none; border:none; color:var(--text-muted);
+  cursor:pointer; font-size:1rem; padding:0;
+}
+.cal-quick-add-close:hover { color:var(--text); }
+.cal-quick-add-nlp {
+  width:100%; background:var(--surface3); border:1px dashed var(--border2);
+  border-radius:var(--radius-xs); padding:8px 12px;
+  color:var(--text); font-family:'Syne',sans-serif; font-size:0.85rem;
+  outline:none; margin-bottom:10px;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.cal-quick-add-nlp:focus {
+  border-color:var(--active-color); border-style:solid;
+  box-shadow:0 0 0 3px var(--active-glow2);
+}
+.cal-quick-add-nlp::placeholder { color:var(--text-muted); font-style:italic; }
+.cal-quick-form { display:flex; gap:7px; flex-wrap:wrap; }
+.cal-quick-form input, .cal-quick-form select {
+  background:var(--surface3); border:1px solid var(--border);
+  border-radius:var(--radius-xs); padding:7px 10px;
+  color:var(--text); font-family:'Syne',sans-serif; font-size:0.8rem; outline:none;
+  transition:border-color 0.2s;
+}
+.cal-quick-form input:focus, .cal-quick-form select:focus { border-color:var(--active-color); }
+.cal-quick-form .qf-title { flex:1; min-width:140px; }
+.cal-quick-form .qf-date  { width:130px; }
+.cal-quick-form .qf-time  { width:100px; }
+.cal-quick-form .qf-enddate { width:130px; }
+.cal-quick-form .qf-cat   { width:110px; }
+.cal-quick-form select option { background:var(--surface3); }
+.cal-quick-form-row2 { display:flex; gap:7px; flex-wrap:wrap; width:100%; }
+.cal-quick-form-row2 input { flex:1; min-width:120px; }
+.nlp-preview {
+  font-family:'JetBrains Mono',monospace; font-size:0.65rem;
+  color:var(--active-color); padding:4px 0; margin-bottom:6px;
+  display:none;
+}
+.nlp-preview.visible { display:block; }
+
+/* ── CALENDAR TOOLBAR ── */
+.cal-toolbar {
+  display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;
+}
+.cal-search-input {
+  flex:1; min-width:140px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius-xs); padding:7px 12px;
+  color:var(--text); font-family:'Syne',sans-serif; font-size:0.8rem; outline:none;
+  transition:border-color 0.2s;
+}
+.cal-search-input:focus { border-color:var(--active-color); }
+.cal-filter-pill {
+  font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+  padding:5px 10px; border-radius:999px;
+  background:var(--surface3); border:1px solid var(--border2);
+  color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.cal-filter-pill:hover { border-color:var(--active-color); color:var(--text); }
+.cal-filter-pill.active { background:var(--active-color); color:#000; border-color:var(--active-color); }
+
+/* ── EVENT DETAIL MODAL ── */
+#modal-event .modal { max-width:480px; }
+.event-color-dot {
+  width:14px; height:14px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle;
+}
+.event-detail-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;
+}
+.event-detail-grid .full { grid-column:1/-1; }
+.event-field-label {
+  font-family:'JetBrains Mono',monospace; font-size:0.58rem;
+  letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;
+}
+.event-field-value {
+  font-size:0.83rem; font-weight:600; color:var(--text);
+}
+.event-field-value.muted { color:var(--text-muted); font-style:italic; }
+
+/* ── UPCOMING PANEL ── */
+.cal-upcoming { margin-top:20px; }
+.cal-upcoming-title {
+  font-family:'JetBrains Mono',monospace; font-size:0.6rem;
+  letter-spacing:3px; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;
+}
+.upcoming-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:9px 12px; background:var(--surface2);
+  border-radius:var(--radius-xs); margin-bottom:6px;
+  border-left:3px solid var(--border2); cursor:pointer; transition:background 0.15s;
+}
+.upcoming-item:hover { background:var(--surface3); }
+.upcoming-date-col {
+  flex-shrink:0; text-align:center; width:36px;
+}
+.upcoming-date-day {
+  font-family:'Bebas Neue',sans-serif; font-size:1.4rem;
+  letter-spacing:1px; line-height:1; color:var(--active-color);
+}
+.upcoming-date-mon {
+  font-family:'JetBrains Mono',monospace; font-size:0.55rem;
+  color:var(--text-muted); text-transform:uppercase;
+}
+.upcoming-body { flex:1; min-width:0; }
+.upcoming-title { font-size:0.83rem; font-weight:700; margin-bottom:2px; }
+.upcoming-meta  { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--text-muted); }
+
+/* Drag states */
+.cal-cell.drag-target { background:var(--active-glow2); border-color:var(--active-color); }
+
+/* + button inside selected cell */
+.cal-cell-add-btn {
+  position:absolute; top:3px; right:3px;
+  width:18px; height:18px;
+  background:var(--active-color); color:#000;
+  border:none; border-radius:50%;
+  font-size:0.75rem; font-weight:900; line-height:1;
+  cursor:pointer; display:none;
+  align-items:center; justify-content:center;
+  transition:transform 0.15s, box-shadow 0.15s;
+  z-index:2;
+}
+.cal-cell.selected .cal-cell-add-btn { display:flex; }
+.cal-cell-add-btn:hover { transform:scale(1.15); box-shadow:0 2px 8px var(--active-glow); }
+
+/* Day detail panel */
+.cal-day-detail {
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius); padding:18px; margin-bottom:16px;
+  animation:slideDown 0.2s ease;
+}
+.cal-day-detail-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.cal-day-detail-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+  letter-spacing:3px; color:var(--active-color);
+}
+.cal-day-detail-close {
+  background:none; border:none; color:var(--text-muted);
+  cursor:pointer; font-size:1.1rem; padding:4px;
+  transition:color 0.15s; line-height:1;
+}
+.cal-day-detail-close:hover { color:var(--text); }
+.cal-day-detail-section-title {
+  font-family:'JetBrains Mono',monospace; font-size:0.58rem;
+  letter-spacing:2px; color:var(--text-muted); text-transform:uppercase;
+  margin-bottom:7px; margin-top:12px;
+}
+.cal-day-detail-section-title:first-of-type { margin-top:0; }
+.cal-detail-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:var(--surface3);
+  border-radius:var(--radius-xs); margin-bottom:5px;
+  cursor:pointer; transition:background 0.15s;
+  border-left:3px solid var(--border2);
+}
+.cal-detail-item:hover { background:var(--surface4); }
+.cal-detail-item-title { flex:1; font-size:0.83rem; font-weight:600; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-detail-item-meta  { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--text-muted); white-space:nowrap; }
+.cal-detail-empty { font-size:0.8rem; color:var(--text-muted); padding:6px 0; }
+
+@media(max-width:860px){
+  .cal-quick-form .qf-date,
+  .cal-quick-form .qf-time,
+  .cal-quick-form .qf-enddate,
+  .cal-quick-form .qf-cat { width:auto; flex:1; }
+  .event-detail-grid { grid-template-columns:1fr; }
+}
 </style>
 </head>
 <body>
@@ -1087,6 +1707,35 @@ select option { background:#17171f; }
   <div class="celeb-sub"  id="celeb-sub">TASK OBLITERATED</div>
 </div>
 <div id="levelup-banner">⭐ LEVEL UP!</div>
+
+<!-- ═══ EVENT DETAIL MODAL ═══ -->
+<div class="modal-overlay" id="modal-event" onclick="if(event.target===this)UI.closeModal('modal-event')">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="UI.closeModal('modal-event')">×</button>
+    <div class="modal-title" id="ev-modal-title">EVENT</div>
+    <div class="event-detail-grid" id="ev-modal-body"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="ev-modal-actions"></div>
+  </div>
+</div>
+
+<!-- ═══ EVENT EDIT MODAL ═══ -->
+<div class="modal-overlay" id="modal-event-edit" onclick="if(event.target===this)UI.closeModal('modal-event-edit')">
+  <div class="modal" style="position:relative;max-width:500px">
+    <button class="modal-close" onclick="UI.closeModal('modal-event-edit')">×</button>
+    <div class="modal-title">EDIT EVENT</div>
+    <div id="ev-edit-body"></div>
+  </div>
+</div>
+
+<!-- ═══ PWA INSTALL BANNER ═══ -->
+<div id="pwa-banner">
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">⚡ Install Task Forge</div>
+    Add to your home screen for the full app experience with notifications.
+  </div>
+  <button class="pwa-install-btn" onclick="PWA.install()">INSTALL</button>
+  <button class="pwa-dismiss-btn" onclick="PWA.dismiss()">×</button>
+</div>
 
 <!-- ═══ UNDO SNACKBAR ═══ -->
 <div id="undo-bar">
@@ -1175,6 +1824,23 @@ select option { background:#17171f; }
     <div class="settings-row">
       <div><div class="settings-label">Quest Mode</div><div class="settings-sub">Rename tasks to quests</div></div>
       <button class="toggle" id="tog-quest" onclick="Cfg.toggle('quest',this)"></button>
+    </div>
+
+    <div class="sidebar-section-title" style="margin-top:14px">INSTALL AS APP</div>
+    <div style="background:var(--surface3);border-radius:var(--radius-xs);padding:14px;margin-bottom:10px">
+      <button class="create-submit-btn" onclick="PWA.install();UI.closeModal('modal-settings')" style="margin-bottom:12px;font-size:0.9rem;padding:10px">⬇ Install Task Forge</button>
+      <div class="settings-label" style="margin-bottom:6px">Android (Chrome)</div>
+      <div class="settings-sub" style="line-height:1.7;margin-bottom:10px">
+        1. Tap the three-dot menu (⋮) in Chrome<br>
+        2. Tap <strong>Add to Home screen</strong> or <strong>Install app</strong><br>
+        3. Tap Install to confirm
+      </div>
+      <div class="settings-label" style="margin-bottom:6px">iPhone / iPad (Safari)</div>
+      <div class="settings-sub" style="line-height:1.7">
+        1. Tap the Share button (□↑) in Safari<br>
+        2. Scroll down and tap <strong>Add to Home Screen</strong><br>
+        3. Tap Add to confirm
+      </div>
     </div>
 
     <div class="sidebar-section-title" style="margin-top:14px">NOTIFICATIONS</div>
@@ -1275,6 +1941,33 @@ select option { background:#17171f; }
     <button class="backup-btn" style="flex:1" onclick="UI.closeDrawer();TabMgr.renderEditor();UI.openModal('modal-tabs')">+ Tabs</button>
     <button class="backup-btn" style="flex:1" onclick="UI.closeDrawer();Render.archiveModal();UI.openModal('modal-archive')">🏛 Archive</button>
     <button class="backup-btn" style="flex:1" onclick="UI.closeDrawer();UI.openModal('modal-backup')">💾 Backup</button>
+    <button class="backup-btn" style="flex:1" onclick="UI.closeDrawer();PWA.install()">⬇ Install</button>
+  </div>
+</div>
+
+<!-- ═══ GLOBAL CREATE FAB ═══ -->
+<button id="global-fab" onclick="Creator.open()" title="Create task or event">+</button>
+
+<!-- ═══ GLOBAL CREATE MODAL ═══ -->
+<div class="modal-overlay" id="modal-create" onclick="if(event.target===this)Creator.close()">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="Creator.close()">×</button>
+    <div class="modal-title" id="create-modal-title">CREATE</div>
+
+    <!-- TYPE TOGGLE -->
+    <div class="create-type-toggle">
+      <button class="create-type-btn active" id="ctype-task" onclick="Creator.setType('task')">⚔ Task</button>
+      <button class="create-type-btn" id="ctype-event" onclick="Creator.setType('event')">📅 Event</button>
+    </div>
+
+    <!-- TAB SELECTOR -->
+    <div>
+      <div class="create-field-label">Tab / Category</div>
+      <div class="create-tab-grid" id="create-tab-grid"></div>
+    </div>
+
+    <!-- MAIN FORM -->
+    <div class="create-form" id="create-form"></div>
   </div>
 </div>
 
@@ -1295,6 +1988,8 @@ select option { background:#17171f; }
     </div>
     <div class="streak-pill" id="streak-pill">🔥 x1</div>
     <button class="hdr-btn hide-mobile" onclick="UI.showDash()" title="Dashboard">🏠</button>
+    <button class="hdr-btn" style="background:var(--active-color);color:#000;border-color:var(--active-color);font-weight:800" onclick="Creator.open()" title="Create task or event">+ NEW</button>
+    <button class="hdr-btn hide-mobile" id="pwa-install-hdr" onclick="PWA.install()" title="Install as app">⬇ Install</button>
     <button class="hdr-btn hide-mobile" onclick="UI.openModal('modal-tabs')" title="Manage Tabs">+ TAB</button>
     <button class="hdr-btn hide-mobile" onclick="UI.openModal('modal-archive')" title="Hall of Victories">🏛</button>
     <button class="hdr-btn hide-mobile" onclick="UI.openModal('modal-backup')" title="Backup">💾</button>
@@ -1304,6 +1999,7 @@ select option { background:#17171f; }
   <nav class="tab-bar" id="tab-bar">
     <!-- rendered by JS -->
     <button class="tab-btn" data-tab="__dash" onclick="UI.showDash()" style="color:var(--text-muted)">◈ Dashboard</button>
+    <button class="tab-btn" data-tab="__cal" onclick="UI.showCalendar()" style="color:var(--text-muted)">📅 Calendar</button>
   </nav>
 
   <div class="main">
@@ -1379,7 +2075,15 @@ let S = {
   currentFilter: 'all',
   currentSort: 'manual',
   activeTagFilter: null,  // string | null
-  view: 'tab',    // 'tab' | 'dash'
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(), // 0-based
+  calSelectedDay: null,  // 'YYYY-MM-DD' | null
+  calAddOpen: false,     // whether quick-add panel is open
+  calFilter: 'all',      // 'all' | tab id | 'event'
+  calSearchQ: '',
+  events: [],            // calendar events (separate from tasks)
+  scheduledNotifs: {},   // { taskId: [{id, datetime, label}] }
+  view: 'tab',    // 'tab' | 'dash' | 'cal'
   xp: 0, level: 1,
   streak: 0,
   photoCaptions: {}, // { "taskId_idx": caption }
@@ -1446,6 +2150,7 @@ function saveState() {
     const d = { tasks:S.tasks, archived:S.archived, groups:S.groups, openGroups:S.openGroups,
       tabs:S.tabs, xp:S.xp, level:S.level, photoCaptions:S.photoCaptions,
       achievements:S.achievements, dailyBadges:S.dailyBadges,
+      scheduledNotifs:S.scheduledNotifs, events:S.events,
       stats:{ ...S.stats, tabsUsedToday:[...S.stats.tabsUsedToday] },
       cfg:S.cfg };
     localStorage.setItem('tf3',JSON.stringify(d));
@@ -1462,6 +2167,8 @@ function loadState() {
       xp:d.xp||0, level:d.level||1, photoCaptions:d.photoCaptions||{},
       achievements:d.achievements||{},
       dailyBadges:d.dailyBadges||{},
+      scheduledNotifs:d.scheduledNotifs||{},
+      events:d.events||[],
     });
     if(d.stats) {
       Object.assign(S.stats, d.stats);
@@ -2778,6 +3485,7 @@ const DashAnims = {
 const Render = {
   all(){
     if(S.view==='dash') this.dashboard();
+    else if(S.view==='cal') Cal.render();
     else this.tab(S.currentTab);
     this.sidebar();
     this.tabBadges();
@@ -2786,8 +3494,11 @@ const Render = {
 
   tabBar(){
     const bar=document.getElementById('tab-bar');
-    // Keep dashboard button
-    bar.innerHTML=`<button class="tab-btn" data-tab="__dash" onclick="UI.showDash()" style="color:var(--text-muted);border-color:transparent">◈ Dashboard</button>`;
+    // Keep dashboard and calendar buttons
+    bar.innerHTML=`
+      <button class="tab-btn${S.view==='dash'?' active':''}" data-tab="__dash" onclick="UI.showDash()" style="--tab-color:var(--text-muted);border-color:${S.view==='dash'?'var(--active-color)':'transparent'}">◈ Dashboard</button>
+      <button class="tab-btn${S.view==='cal'?' active':''}" data-tab="__cal" onclick="UI.showCalendar()" style="--tab-color:#00d4aa;border-color:${S.view==='cal'?'#00d4aa':'transparent'};color:${S.view==='cal'?'#00d4aa':'var(--text-muted)'}">📅 Calendar</button>
+    `;
     S.tabs.forEach(t=>{
       const btn=document.createElement('button');
       btn.className='tab-btn'+(S.currentTab===t.id&&S.view==='tab'?' active':'');
@@ -2843,6 +3554,19 @@ const Render = {
       </select>
       <button class="boss-toggle" id="boss-toggle" onclick="this.classList.toggle('on')" title="${q?'Mark as boss encounter':'Mark as boss task'}">💀 ${q?'Boss':'Boss'}</button>
       <button class="add-btn" onclick="UI.addTask()">${q?'+ ACCEPT QUEST':'+ ADD TASK'}</button>
+    </div>
+    <div class="quick-sort-bar">
+      <span class="qs-label">Sort:</span>
+      ${[
+        {v:'manual',    icon:'⠿', label:'Manual'},
+        {v:'priority',  icon:'🔴', label:'Priority'},
+        {v:'due',       icon:'📅', label:'Due Date'},
+        {v:'created',   icon:'🕐', label:'Newest'},
+        {v:'alpha',     icon:'🔤', label:'A–Z'},
+      ].map(({v,icon,label})=>`
+        <button class="qs-btn${S.currentSort===v?' active':''}" onclick="UI.setSort('${v}')" title="Sort by ${label}">
+          ${icon} <span class="qs-label-text">${label}</span>
+        </button>`).join('')}
     </div>`;
 
     const useGroups=S.currentFilter==='all'&&S.currentSort==='manual';
@@ -2967,9 +3691,19 @@ const Render = {
           ${!t.done
             ?`<button class="act-btn complete" onclick="UI.completeTask('${t.id}')">✓ ${q?'Complete Quest':'Complete'}</button>`
             :`<button class="act-btn" onclick="UI.uncompleteTask('${t.id}')">↩ Reopen</button>`}
-          <button class="act-btn" onclick="UI.archiveTask('${t.id}')">🏛 ${q?'Hall of Victories':'Archive'}</button>
           <button class="act-btn" onclick="UI.duplicateTask('${t.id}')">⧉ Duplicate</button>
           <button class="act-btn danger" onclick="UI.deleteTask('${t.id}')">✕ Delete</button>
+        </div>
+        <!-- SCHEDULED NOTIFICATIONS -->
+        <div>
+          <div class="exp-label">⏰ Reminders</div>
+          <div class="notif-schedule-row">
+            <input type="datetime-local" id="notif-dt-${t.id}" title="Reminder date & time">
+            <button class="notif-sched-btn" onclick="SchedNotifs.schedule('${t.id}',document.getElementById('notif-dt-${t.id}').value,'${esc(t.title)}');UI._refreshSchedNotifs('${t.id}')">+ Set</button>
+          </div>
+          <div id="snotifs_${t.id}" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+            ${SchedNotifs.renderForCard(t.id)}
+          </div>
         </div>
         <!-- TAGS -->
         <div>
@@ -3326,6 +4060,9 @@ const UI = {
   toggleDone(id,btn){
     const task=S.tasks.find(t=>t.id===id); if(!task)return;
     if(task.done){
+      // Reopen from archive if needed
+      const inArchive=S.archived.find(t=>t.id===id);
+      if(inArchive){ Tasks.restore(id); Render.all(); return; }
       Tasks.uncomplete(id); Render.all();
     } else {
       const card=document.getElementById('tc_'+id);
@@ -3333,8 +4070,14 @@ const UI = {
       Celebrate.task(task,card);
       const peers=S.tasks.filter(t=>t.tab===task.tab&&t.group===task.group);
       if(peers.length>0&&peers.every(t=>t.done)) setTimeout(()=>Celebrate.project(task.tab,task.group),600);
-      if(card){ card.classList.add('card-flash'); setTimeout(()=>card.classList.remove('card-flash'),500); }
-      Render.all();
+      if(card){ card.classList.add('card-flash'); }
+      // Auto-archive after flash delay
+      setTimeout(()=>{
+        Tasks.archive(id);
+        Undo.push(`"${task.title}" completed & archived.`,()=>{ Tasks.restore(id); Render.all(); });
+        Render.all();
+        Ach.check('archivist');
+      }, 600);
     }
   },
 
@@ -3345,7 +4088,13 @@ const UI = {
     Celebrate.task(task,card);
     const peers=S.tasks.filter(t=>t.tab===task.tab&&t.group===task.group);
     if(peers.length>0&&peers.every(t=>t.done)) setTimeout(()=>Celebrate.project(task.tab,task.group),600);
-    Render.all();
+    // Auto-archive after flash
+    setTimeout(()=>{
+      Tasks.archive(id);
+      Undo.push(`"${task.title}" completed & archived.`,()=>{ Tasks.restore(id); Render.all(); });
+      Render.all();
+      Ach.check('archivist');
+    }, 600);
   },
 
   uncompleteTask(id){ Tasks.uncomplete(id); Render.all(); },
@@ -3470,14 +4219,28 @@ const UI = {
     };
   },
 
-  refreshTagsInCard(taskId){    const t=S.tasks.find(tt=>tt.id===taskId); if(!t) return;
+  showCalendar(){
+    S.view='cal';
+    if(typeof DashAnims!=='undefined') DashAnims.stop();
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    const calBtn=document.querySelector('.tab-btn[data-tab="__cal"]');
+    if(calBtn) calBtn.classList.add('active');
+    Cal.render();
+    Render.sidebar();
+  },
+
+  _refreshSchedNotifs(taskId){
+    const wrap=document.getElementById(`snotifs_${taskId}`); if(!wrap)return;
+    wrap.innerHTML=SchedNotifs.renderForCard(taskId);
+  },
+
+  refreshTagsInCard(taskId){
+    const t=S.tasks.find(tt=>tt.id===taskId); if(!t) return;
     const wrap=document.getElementById('tagwrap_'+taskId); if(!wrap) return;
-    // Preserve the input element
     const input=wrap.querySelector('.tag-add-input');
     const chips=(t.tags||[]).map(tg=>`<span class="tag-chip">#${esc(tg)}<button class="tag-chip-del" onclick="Tags.removeFromTask('${taskId}','${esc(tg)}');UI.refreshTagsInCard('${taskId}');Render.sidebar()">×</button></span>`).join('');
     wrap.innerHTML=chips;
     if(input) wrap.appendChild(input);
-    // Also update collapsed tag pills
     const collapsed=document.querySelector(`#tc_${taskId} .task-tags`);
     if(collapsed) collapsed.innerHTML=(t.tags||[]).map(tg=>`<span class="task-tag-pill">#${esc(tg)}</span>`).join('');
   },
@@ -3519,6 +4282,1127 @@ const UI = {
   closeDrawer(){
     document.getElementById('mobile-drawer').classList.remove('open');
     document.body.style.overflow='';
+  },
+};
+
+/* ═══════════════════════════════════════════
+   PWA
+═══════════════════════════════════════════ */
+const PWA = {
+  _deferredPrompt: null,
+
+  init() {
+    // Build and inject manifest as blob URL
+    const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#0a0a0d"/><text x="256" y="340" font-size="280" text-anchor="middle" fill="#6c8fff">⚡</text></svg>`;
+    const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(icon);
+    const manifest = {
+      name: 'Task Forge',
+      short_name: 'Task Forge',
+      description: 'Gamified task manager — your quests, your victories',
+      start_url: '.',
+      display: 'standalone',
+      background_color: '#0a0a0d',
+      theme_color: '#6c8fff',
+      orientation: 'portrait-primary',
+      icons: [
+        { src: iconUrl, sizes: '192x192', type: 'image/svg+xml' },
+        { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+      ],
+    };
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    document.getElementById('pwa-manifest-link').href = url;
+
+    // Register service worker
+    if('serviceWorker' in navigator) {
+      const swCode = `
+const CACHE = 'taskforge-v3';
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))); });
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type:'window'}).then(cs => {
+    if(cs.length) return cs[0].focus();
+    return clients.openWindow('/');
+  }));
+});
+self.addEventListener('message', e => {
+  if(e.data && e.data.type === 'SCHEDULE_NOTIF') {
+    const { id, title, body, delay } = e.data;
+    setTimeout(() => {
+      self.registration.showNotification(title, {
+        body, icon: '/icon-192.png', badge: '/icon-192.png',
+        tag: id, renotify: true,
+        data: { id }
+      });
+    }, delay);
+  }
+});`;
+      const swBlob = new Blob([swCode], {type:'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(()=>{});
+    }
+
+    // Listen for install prompt
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      // Show banner after 3 seconds
+      setTimeout(() => {
+        const dismissed = localStorage.getItem('pwa_dismissed');
+        if(!dismissed) document.getElementById('pwa-banner').classList.add('visible');
+      }, 3000);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this.dismiss();
+      Notifs.showToast('✓ INSTALLED', 'Task Forge is now on your home screen!');
+    });
+
+    // Update header install button visibility
+    if(window.matchMedia('(display-mode: standalone)').matches) {
+      const btn = document.getElementById('pwa-install-hdr');
+      if(btn) btn.style.display = 'none';
+    }
+  },
+
+  async install() {
+    if(this._deferredPrompt) {
+      this._deferredPrompt.prompt();
+      const result = await this._deferredPrompt.userChoice;
+      this._deferredPrompt = null;
+      this.dismiss();
+    } else if(window.matchMedia('(display-mode: standalone)').matches) {
+      Notifs.showToast('✓ ALREADY INSTALLED', 'Task Forge is running as an app.');
+    } else {
+      // Show instructions — detect platform
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isAndroid = /android/i.test(navigator.userAgent);
+      let msg;
+      if(isIOS) {
+        msg = 'In Safari: tap the Share button (□↑) → Add to Home Screen → Add';
+      } else if(isAndroid) {
+        msg = 'In Chrome: tap ⋮ menu → Add to Home screen → Install';
+      } else {
+        msg = 'In Chrome: tap ⋮ menu → Install Task Forge. Or look for the install icon in the address bar.';
+      }
+      Notifs.showToast('⬇ HOW TO INSTALL', msg, 9000);
+    }
+  },
+
+  dismiss() {
+    document.getElementById('pwa-banner').classList.remove('visible');
+    localStorage.setItem('pwa_dismissed','1');
+  },
+};
+
+/* ═══════════════════════════════════════════
+   SCHEDULED NOTIFICATIONS
+═══════════════════════════════════════════ */
+const SchedNotifs = {
+  // Schedule a notification for a task at a specific datetime
+  async schedule(taskId, datetimeStr, label) {
+    if(!datetimeStr) return;
+    const when = new Date(datetimeStr).getTime();
+    const delay = when - Date.now();
+    if(delay <= 0) { Notifs.showToast('⚠ PAST TIME', 'Please choose a future date and time.'); return; }
+
+    const task = S.tasks.find(t=>t.id===taskId);
+    if(!task) return;
+
+    const notifId = `notif_${taskId}_${Date.now()}`;
+    if(!S.scheduledNotifs[taskId]) S.scheduledNotifs[taskId] = [];
+    S.scheduledNotifs[taskId].push({ id:notifId, datetime:datetimeStr, label:label||task.title });
+    saveState();
+
+    // Send to service worker if available
+    if(navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SCHEDULE_NOTIF',
+        id: notifId,
+        title: '⚡ Task Forge',
+        body: label || task.title,
+        delay,
+      });
+    } else {
+      // Fallback: setTimeout (works while app is open)
+      setTimeout(() => {
+        Notifs.showToast('⏰ REMINDER', label || task.title, 8000);
+        if(Notifs._supported) {
+          try { new Notification('⚡ Task Forge', { body: label||task.title }); } catch(e){}
+        }
+      }, delay);
+    }
+
+    Notifs.showToast('⏰ SCHEDULED', `Reminder set for ${new Date(datetimeStr).toLocaleString()}`);
+  },
+
+  cancel(taskId, notifId) {
+    if(!S.scheduledNotifs[taskId]) return;
+    S.scheduledNotifs[taskId] = S.scheduledNotifs[taskId].filter(n=>n.id!==notifId);
+    if(!S.scheduledNotifs[taskId].length) delete S.scheduledNotifs[taskId];
+    saveState();
+    Notifs.showToast('🗑 CANCELLED', 'Reminder removed.');
+  },
+
+  getForTask(taskId) {
+    return S.scheduledNotifs[taskId] || [];
+  },
+
+  // Re-schedule all saved notifs on app open (for SW fallback)
+  restoreAll() {
+    Object.entries(S.scheduledNotifs).forEach(([taskId, notifs]) => {
+      notifs.forEach(n => {
+        const delay = new Date(n.datetime).getTime() - Date.now();
+        if(delay > 0 && navigator.serviceWorker?.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type:'SCHEDULE_NOTIF', id:n.id,
+            title:'⚡ Task Forge', body:n.label, delay,
+          });
+        }
+      });
+    });
+  },
+
+  renderForCard(taskId) {
+    const notifs = this.getForTask(taskId);
+    const pills = notifs.map(n=>`
+      <div class="scheduled-notif-pill">
+        ⏰ ${new Date(n.datetime).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+        <button onclick="SchedNotifs.cancel('${taskId}','${n.id}');UI._refreshSchedNotifs('${taskId}')">×</button>
+      </div>`).join('');
+    return pills;
+  },
+};
+
+/* ═══════════════════════════════════════════
+   CALENDAR
+═══════════════════════════════════════════ */
+const Cal = {
+  MONTHS: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+  MONTHS_SHORT: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  DAYS: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+  _dragEvId: null,
+
+  /* ── EVENT CRUD ──────────────────────────── */
+  newEvent(fields={}) {
+    return {
+      id: uid(),
+      title: fields.title||'',
+      startDate: fields.startDate||today(),
+      endDate: fields.endDate||fields.startDate||today(),
+      allDay: fields.allDay!==undefined?fields.allDay:true,
+      startTime: fields.startTime||'',
+      endTime: fields.endTime||'',
+      location: fields.location||'',
+      note: fields.note||'',
+      category: fields.category||'personal',
+      color: fields.color||tabColor(fields.category||'personal'),
+      recur: fields.recur||'none',
+      createdAt: Date.now(),
+    };
+  },
+
+  addEvent(fields) {
+    const ev = this.newEvent(fields);
+    S.events.push(ev);
+    saveState();
+    return ev;
+  },
+
+  updateEvent(id, fields) {
+    const ev = S.events.find(e=>e.id===id);
+    if(!ev) return;
+    Object.assign(ev, fields);
+    // Recalc color if category changed
+    if(fields.category) ev.color = tabColor(fields.category);
+    saveState();
+  },
+
+  deleteEvent(id) {
+    S.events = S.events.filter(e=>e.id!==id);
+    saveState();
+  },
+
+  /* ── NATURAL LANGUAGE PARSER ─────────────── */
+  parseNL(text) {
+    const t = text.trim();
+    if(!t) return null;
+    let title=t, startDate=today(), endDate=today(), startTime='', allDay=true;
+
+    const now = new Date();
+    const todayD = new Date(today()+'T12:00:00');
+
+    // Time pattern: "at 2pm", "at 14:30", "@ 9:00 AM"
+    const timeRx = /(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+    const timeM = t.match(timeRx);
+    if(timeM) {
+      let h=parseInt(timeM[1]), mn=parseInt(timeM[2]||'0');
+      const ampm=(timeM[3]||'').toLowerCase();
+      if(ampm==='pm'&&h<12) h+=12;
+      if(ampm==='am'&&h===12) h=0;
+      startTime=`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;
+      allDay=false;
+      title=title.replace(timeRx,'').trim();
+    }
+
+    // Relative day keywords
+    const relMap = {
+      'today':0,'tomorrow':1,'yesterday':-1,
+      'next monday':this._nextWeekday(1),'next tuesday':this._nextWeekday(2),
+      'next wednesday':this._nextWeekday(3),'next thursday':this._nextWeekday(4),
+      'next friday':this._nextWeekday(5),'next saturday':this._nextWeekday(6),
+      'next sunday':this._nextWeekday(0),
+      'this monday':this._thisWeekday(1),'this tuesday':this._thisWeekday(2),
+      'this wednesday':this._thisWeekday(3),'this thursday':this._thisWeekday(4),
+      'this friday':this._thisWeekday(5),'this saturday':this._thisWeekday(6),
+      'this sunday':this._thisWeekday(0),
+    };
+    let matched=false;
+    for(const [k,v] of Object.entries(relMap)) {
+      const rx=new RegExp(k,'i');
+      if(t.match(rx)) {
+        const d=new Date(todayD); d.setDate(d.getDate()+v);
+        startDate=d.toISOString().slice(0,10); endDate=startDate;
+        title=title.replace(rx,'').trim();
+        matched=true; break;
+      }
+    }
+
+    // "in N days/weeks"
+    if(!matched) {
+      const inRx=/in\s+(\d+)\s+(day|days|week|weeks)/i;
+      const inM=t.match(inRx);
+      if(inM) {
+        const n=parseInt(inM[1]),unit=inM[2].toLowerCase();
+        const d=new Date(todayD); d.setDate(d.getDate()+(unit.startsWith('week')?n*7:n));
+        startDate=d.toISOString().slice(0,10); endDate=startDate;
+        title=title.replace(inRx,'').trim();
+      }
+    }
+
+    // Explicit date "Jan 15", "January 15", "15 Jan", "1/15", "01/15/2026"
+    const dateRx=/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/;
+    const dateM=t.match(dateRx);
+    if(dateM&&!matched) {
+      const mo=parseInt(dateM[1])-1,dy=parseInt(dateM[2]);
+      const yr=dateM[3]?parseInt(dateM[3])+(parseInt(dateM[3])<100?2000:0):now.getFullYear();
+      const d=new Date(yr,mo,dy);
+      startDate=d.toISOString().slice(0,10); endDate=startDate;
+      title=title.replace(dateRx,'').trim();
+    }
+
+    // Clean up stray words
+    title=title.replace(/^(on|for|about)\s+/i,'').replace(/\s+/g,' ').trim();
+    if(!title) title=t;
+
+    return { title, startDate, endDate, startTime, allDay };
+  },
+
+  _nextWeekday(target) {
+    const cur=new Date().getDay(); // 0=Sun
+    const diff=(target-cur+7)%7||7;
+    return diff;
+  },
+  _thisWeekday(target) {
+    const cur=new Date().getDay();
+    const diff=(target-cur+7)%7;
+    return diff;
+  },
+
+  /* ── RENDER ─────────────────────────────── */
+  render() {
+    const content = document.getElementById('content');
+    const yr = S.calYear, mo = S.calMonth;
+    const rawFirstDay = new Date(yr, mo, 1).getDay();
+    const firstDay = (rawFirstDay + 6) % 7;
+    const daysInMonth = new Date(yr, mo+1, 0).getDate();
+    const daysInPrev = new Date(yr, mo, 0).getDate();
+    const tod = today();
+    const q = S.calSearchQ.toLowerCase();
+
+    // Task map
+    const taskMap = {};
+    S.tasks.filter(t=>t.dueDate).forEach(t=>{
+      if(q && !t.title.toLowerCase().includes(q) && !(t.note||'').toLowerCase().includes(q)) return;
+      if(S.calFilter!=='all' && S.calFilter!=='event' && t.tab!==S.calFilter) return;
+      if(!taskMap[t.dueDate]) taskMap[t.dueDate]=[];
+      taskMap[t.dueDate].push({type:'task',data:t});
+    });
+
+    // Event map — build per-day entries, handle multi-day spans
+    const eventMap = {};
+    const filteredEvents = S.events.filter(ev=>{
+      if(q && !ev.title.toLowerCase().includes(q) &&
+         !(ev.note||'').toLowerCase().includes(q) &&
+         !(ev.location||'').toLowerCase().includes(q)) return false;
+      if(S.calFilter!=='all' && S.calFilter!==ev.category && S.calFilter!=='event') return false;
+      if(S.calFilter==='event') return true;
+      return true;
+    });
+    filteredEvents.forEach(ev=>{
+      const start=ev.startDate, end=ev.endDate||ev.startDate;
+      let cur=new Date(start+'T12:00:00');
+      const endD=new Date(end+'T12:00:00');
+      const isMulti=start!==end;
+      while(cur<=endD) {
+        const ds=cur.toISOString().slice(0,10);
+        if(!eventMap[ds]) eventMap[ds]=[];
+        const pos=start===end?'single':cur.toISOString().slice(0,10)===start?'start':cur.toISOString().slice(0,10)===end?'end':'mid';
+        eventMap[ds].push({type:'event',data:ev,pos,isMulti});
+        cur.setDate(cur.getDate()+1);
+      }
+    });
+
+    // Day headers
+    const dayNames = this.DAYS.map((d,i)=>`<div class="cal-day-name${i>=5?' weekend-name':''}">${d}</div>`).join('');
+
+    const colOf = d=>(firstDay+d-1)%7;
+    const isWeekend = d=>{ const c=colOf(d); return c===5||c===6; };
+
+    // Build cells
+    const cells=[];
+    for(let i=0;i<firstDay;i++){
+      const d=daysInPrev-firstDay+i+1;
+      cells.push(`<div class="cal-cell other-month"><div class="cal-day-num">${d}</div></div>`);
+    }
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday=dateStr===tod, isSel=dateStr===S.calSelectedDay, weekend=isWeekend(d);
+      const items=[...(eventMap[dateStr]||[]),...(taskMap[dateStr]||[])];
+      const dotsHtml=items.slice(0,4).map(item=>{
+        if(item.type==='event'){
+          const ev=item.data;
+          const posClass=item.isMulti?` multiday-${item.pos}`:'';
+          const timeLabel=!ev.allDay&&ev.startTime?`${ev.startTime} `:'';
+          return `<div class="cal-event-bar${posClass}${!ev.allDay?' timed':''}"
+            style="background:${ev.color}33;color:${ev.color};border-left:2px solid ${ev.color}"
+            onclick="event.stopPropagation();Cal.showEventDetail('${ev.id}')"
+            draggable="true"
+            ondragstart="event.stopPropagation();Cal._dragEvId='${ev.id}'"
+            >${timeLabel}${esc(ev.title)}</div>`;
+        } else {
+          const t=item.data;
+          const c=tabColor(t.tab);
+          return `<div class="cal-dot${t.priority==='urgent'?' urgent':t.priority==='high'?' high':''}"
+            style="background:${c}22;color:${c}"
+            onclick="event.stopPropagation();UI.switchTab('${t.tab}')"
+            >${esc(t.title)}</div>`;
+        }
+      }).join('');
+      const overflow=items.length>4?`<div style="font-size:0.55rem;color:var(--text-muted);padding:1px 3px">+${items.length-4} more</div>`:'';
+      cells.push(`
+        <div class="cal-cell${isToday?' today':''}${isSel?' selected':''}${weekend?' weekend-cell':''}"
+          id="calday_${dateStr}"
+          style="position:relative"
+          onclick="Cal.clickDay('${dateStr}')"
+          ondragover="event.preventDefault();Cal.dragOver('${dateStr}')"
+          ondrop="event.preventDefault();Cal.drop('${dateStr}')"
+          ondragleave="Cal.dragLeave('${dateStr}')">
+          <div class="cal-day-num">${d}</div>
+          ${dotsHtml}${overflow}
+          <button class="cal-cell-add-btn" title="Add event or task"
+            onclick="event.stopPropagation();Creator.open('${dateStr}')">+</button>
+        </div>`);
+    }
+    const total=cells.length;
+    const remaining=total<35?35-total:total<42?42-total:0;
+    for(let d=1;d<=remaining;d++){
+      cells.push(`<div class="cal-cell other-month"><div class="cal-day-num">${d}</div></div>`);
+    }
+
+    // Day detail panel — shows tasks & events for selected day
+    const selDate = S.calSelectedDay;
+    let dayDetailHTML = '';
+    if(selDate) {
+      const selItems = [
+        ...(eventMap[selDate]||[]),
+        ...(taskMap[selDate]||[]),
+      ];
+      const selEvents = selItems.filter(x=>x.type==='event');
+      const selTasks  = selItems.filter(x=>x.type==='task');
+      const dateLabel = new Date(selDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+      const evRows = selEvents.map(item=>{
+        const ev=item.data;
+        const timeStr = !ev.allDay&&ev.startTime ? ev.startTime+(ev.endTime?'–'+ev.endTime:'') : 'All day';
+        return `<div class="cal-detail-item" style="border-left-color:${ev.color}"
+          onclick="Cal.showEventDetail('${ev.id}')">
+          <span class="event-color-dot" style="background:${ev.color};width:8px;height:8px;border-radius:50%;flex-shrink:0"></span>
+          <span class="cal-detail-item-title">${esc(ev.title)}</span>
+          <span class="cal-detail-item-meta">${timeStr}</span>
+          ${ev.recur&&ev.recur!=='none'?`<span class="recur-badge" style="font-size:0.55rem">↻</span>`:''}
+        </div>`;
+      }).join('');
+
+      const taskRows = selTasks.map(item=>{
+        const t=item.data;
+        const c=tabColor(t.tab);
+        return `<div class="cal-detail-item" style="border-left-color:${c}"
+          onclick="UI.switchTab('${t.tab}')">
+          <span class="pri-dot" style="background:${PRI_COLORS[t.priority]||'var(--surface4)'}"></span>
+          <span class="cal-detail-item-title">${esc(t.title)}</span>
+          <span class="cal-detail-item-meta">${esc(tabName(t.tab))} · ${esc(t.group)}</span>
+          ${t.recur&&t.recur!=='none'?`<span class="recur-badge" style="font-size:0.55rem">↻</span>`:''}
+        </div>`;
+      }).join('');
+
+      dayDetailHTML = `
+        <div class="cal-day-detail" id="cal-day-detail-panel">
+          <div class="cal-day-detail-header">
+            <div class="cal-day-detail-title">${dateLabel}</div>
+            <button class="cal-day-detail-close" onclick="S.calSelectedDay=null;S.calAddOpen=false;Cal.render()">×</button>
+          </div>
+          ${selEvents.length ? `
+            <div class="cal-day-detail-section-title">Events (${selEvents.length})</div>
+            ${evRows}` : ''}
+          ${selTasks.length ? `
+            <div class="cal-day-detail-section-title">Tasks (${selTasks.length})</div>
+            ${taskRows}` : ''}
+          ${!selItems.length ? `<div class="cal-detail-empty">Nothing scheduled for this day.</div>` : ''}
+        </div>`;
+    }
+
+    // Quick-add panel — only shown when + was tapped
+    const quickAddHTML = (selDate && S.calAddOpen) ? `
+      <div class="cal-quick-add" id="cal-quick-add-panel">
+        <div class="cal-quick-add-title">
+          + ADD TO ${new Date(selDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase()}
+          <button class="cal-quick-add-close" onclick="S.calAddOpen=false;Cal.render()">×</button>
+        </div>
+        <input class="cal-quick-add-nlp" id="cal-nlp" placeholder='Try: "Team meeting at 3pm" or "Dentist next Friday at 10am"'
+          oninput="Cal.previewNL(this.value)"
+          onkeydown="if(event.key==='Enter')Cal.commitNL()">
+        <div class="nlp-preview" id="nlp-preview"></div>
+        <div class="cal-quick-form">
+          <input class="qf-title" id="qf-title" placeholder="Event title..." value="">
+          <input class="qf-date" id="qf-start" type="date" value="${selDate}">
+          <input class="qf-enddate" id="qf-end" type="date" value="${selDate}">
+          <input class="qf-time" id="qf-time" type="time" placeholder="Start time">
+          <input class="qf-time" id="qf-etime" type="time" placeholder="End time">
+          <select class="qf-cat" id="qf-cat">
+            ${S.tabs.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}
+            <option value="event">Event</option>
+          </select>
+        </div>
+        <div class="cal-quick-form-row2" style="margin-top:7px">
+          <input id="qf-loc" placeholder="Location (optional)" style="flex:1;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-xs);padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.8rem;outline:none">
+          <select id="qf-recur" style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-xs);padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.8rem;outline:none">
+            <option value="none">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <button class="add-btn" style="white-space:nowrap" onclick="Cal.saveQuickAdd()">+ ADD EVENT</button>
+          <button class="act-btn" onclick="Cal.addTaskFromDay('${selDate}')">+ TASK</button>
+        </div>
+      </div>` : '';
+
+    // Filter pills
+    const filterCats=[
+      {id:'all',label:'All'},
+      {id:'event',label:'Events'},
+      ...S.tabs.map(t=>({id:t.id,label:t.name,color:t.color})),
+    ];
+    const filterHTML=filterCats.map(f=>`
+      <button class="cal-filter-pill${S.calFilter===f.id?' active':''}"
+        onclick="Cal.setFilter('${f.id}')"
+        ${f.color?`style="${S.calFilter===f.id?`background:${f.color};border-color:${f.color}`:`border-color:${f.color}44`}"`:''}
+      >${f.label}</button>`).join('');
+
+    // Upcoming events (next 10)
+    const nowTs=Date.now();
+    const upcoming=[
+      ...S.events.map(ev=>({type:'event',date:ev.startDate,time:ev.startTime||'',title:ev.title,color:ev.color,id:ev.id})),
+      ...S.tasks.filter(t=>!t.done&&t.dueDate).map(t=>({type:'task',date:t.dueDate,time:'',title:t.title,color:tabColor(t.tab),id:t.id,tab:t.tab})),
+    ].filter(x=>x.date>=today())
+     .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time))
+     .slice(0,10);
+
+    const upcomingHTML=upcoming.length?`
+      <div class="cal-upcoming">
+        <div class="cal-upcoming-title">Upcoming (${upcoming.length})</div>
+        ${upcoming.map(x=>{
+          const d=new Date(x.date+'T12:00:00');
+          return `<div class="upcoming-item" style="border-left-color:${x.color}"
+            onclick="${x.type==='event'?`Cal.showEventDetail('${x.id}')`:`UI.switchTab('${x.tab}')`}">
+            <div class="upcoming-date-col">
+              <div class="upcoming-date-day">${d.getDate()}</div>
+              <div class="upcoming-date-mon">${this.MONTHS_SHORT[d.getMonth()]}</div>
+            </div>
+            <div class="upcoming-body">
+              <div class="upcoming-title">${esc(x.title)}</div>
+              <div class="upcoming-meta">${x.time?x.time+' · ':''}${x.type==='event'?'Event':'Task'}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`:
+      `<div class="cal-upcoming"><div class="cal-upcoming-title">No Upcoming Events</div></div>`;
+
+    // Unscheduled tasks (no filter applied for these)
+    const unscheduled=S.tasks.filter(t=>!t.dueDate&&!t.done).slice(0,8);
+
+    content.innerHTML=`
+      <div class="cal-toolbar">
+        <input class="cal-search-input" placeholder="🔍 Search events..." value="${esc(S.calSearchQ)}"
+          oninput="S.calSearchQ=this.value;Cal.render()">
+        ${filterHTML}
+      </div>
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="Cal.prevMonth()">◀</button>
+        <div class="cal-month-title">${this.MONTHS[mo]} ${yr}</div>
+        <button class="cal-nav-btn" onclick="Cal.nextMonth()">▶</button>
+      </div>
+      <div class="cal-grid">
+        ${dayNames}
+        ${cells.join('')}
+      </div>
+      ${dayDetailHTML}
+      ${quickAddHTML}
+      ${upcomingHTML}
+      ${unscheduled.length?`
+        <div class="cal-unscheduled">
+          <div class="cal-unscheduled-title">Unscheduled Tasks (${unscheduled.length})</div>
+          <div class="cal-day-task-list">
+            ${unscheduled.map(t=>`
+              <div class="cal-day-task" style="border-left-color:${tabColor(t.tab)}" onclick="UI.switchTab('${t.tab}')">
+                <span class="pri-dot" style="background:${PRI_COLORS[t.priority]||'var(--surface4)'}"></span>
+                <span class="cal-day-task-title">${esc(t.title)}</span>
+                <span class="cal-day-task-meta">${esc(tabName(t.tab))}</span>
+              </div>`).join('')}
+          </div>
+        </div>`:''}
+    `;
+  },
+
+  /* ── NL PREVIEW & COMMIT ─────────────────── */
+  previewNL(text) {
+    const parsed=this.parseNL(text);
+    const el=document.getElementById('nlp-preview'); if(!el) return;
+    if(!parsed||!text.trim()){ el.classList.remove('visible'); return; }
+    el.textContent=`→ "${parsed.title}" on ${parsed.startDate}${parsed.startTime?' at '+parsed.startTime:''}`;
+    el.classList.add('visible');
+    // Populate form fields
+    const tf=document.getElementById('qf-title');
+    const sf=document.getElementById('qf-start');
+    const ef=document.getElementById('qf-end');
+    const tm=document.getElementById('qf-time');
+    if(tf&&!tf.value) tf.value=parsed.title;
+    if(sf) sf.value=parsed.startDate;
+    if(ef) ef.value=parsed.startDate;
+    if(tm&&parsed.startTime) tm.value=parsed.startTime;
+  },
+
+  commitNL() {
+    const nlp=document.getElementById('cal-nlp'); if(!nlp) return;
+    this.previewNL(nlp.value);
+    this.saveQuickAdd();
+  },
+
+  /* ── SAVE QUICK ADD ──────────────────────── */
+  saveQuickAdd() {
+    const title=(document.getElementById('qf-title')?.value||'').trim();
+    if(!title){ document.getElementById('qf-title')?.focus(); return; }
+    const startDate=document.getElementById('qf-start')?.value||S.calSelectedDay||today();
+    const endDate=document.getElementById('qf-end')?.value||startDate;
+    const startTime=document.getElementById('qf-time')?.value||'';
+    const endTime=document.getElementById('qf-etime')?.value||'';
+    const category=document.getElementById('qf-cat')?.value||'personal';
+    const location=document.getElementById('qf-loc')?.value||'';
+    const recur=document.getElementById('qf-recur')?.value||'none';
+    this.addEvent({title,startDate,endDate,startTime,endTime,allDay:!startTime,category,location,recur});
+    S.calAddOpen = false;
+    S.calSelectedDay = startDate; // keep day selected to show detail
+    this.render();
+    XP.add(5, window.innerWidth/2, 200);
+  },
+
+  /* ── ADD TASK FROM DAY ───────────────────── */
+  addTaskFromDay(dateStr) {
+    const title=(document.getElementById('qf-title')?.value||'').trim()||'New Task';
+    Tasks.add(S.currentTab||'personal', title, 'General','','',false,'none');
+    // Set due date on the last added task
+    const last=S.tasks[S.tasks.length-1];
+    if(last){ last.dueDate=dateStr; saveState(); }
+    S.calAddOpen = false;
+    S.calSelectedDay = dateStr; // keep day selected
+    this.render();
+    Notifs.showToast('✓ TASK ADDED', `"${title}" due ${dateStr}`);
+  },
+
+  /* ── CLICK DAY ───────────────────────────── */
+  /* ── CLICK DAY — show detail panel only ─── */
+  clickDay(dateStr) {
+    if(S.calSelectedDay===dateStr) {
+      // Second tap on same day — deselect
+      S.calSelectedDay = null;
+      S.calAddOpen = false;
+    } else {
+      S.calSelectedDay = dateStr;
+      S.calAddOpen = false; // never auto-open add panel on day tap
+    }
+    this.render();
+    if(S.calSelectedDay) {
+      requestAnimationFrame(()=>{
+        const panel=document.getElementById('cal-day-detail-panel');
+        if(panel) panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+      });
+    }
+  },
+
+  /* ── OPEN ADD — now routes through global Creator ── */
+  openAdd(dateStr) {
+    S.calSelectedDay = dateStr;
+    Creator.open(dateStr);
+  },
+
+  /* ── EVENT DETAIL ────────────────────────── */
+  showEventDetail(id) {
+    const ev=S.events.find(e=>e.id===id); if(!ev) return;
+    document.getElementById('ev-modal-title').innerHTML=
+      `<span class="event-color-dot" style="background:${ev.color}"></span>${esc(ev.title)}`;
+    document.getElementById('ev-modal-body').innerHTML=`
+      <div class="full">
+        <div class="event-field-label">Date</div>
+        <div class="event-field-value">${ev.startDate}${ev.endDate&&ev.endDate!==ev.startDate?' → '+ev.endDate:''}</div>
+      </div>
+      ${!ev.allDay?`
+        <div>
+          <div class="event-field-label">Start</div>
+          <div class="event-field-value">${ev.startTime||'—'}</div>
+        </div>
+        <div>
+          <div class="event-field-label">End</div>
+          <div class="event-field-value">${ev.endTime||'—'}</div>
+        </div>`:
+        `<div><div class="event-field-label">Type</div><div class="event-field-value">All Day</div></div>`}
+      <div>
+        <div class="event-field-label">Category</div>
+        <div class="event-field-value">${esc(tabName(ev.category)||ev.category)}</div>
+      </div>
+      <div>
+        <div class="event-field-label">Repeat</div>
+        <div class="event-field-value">${Recur.LABELS[ev.recur]||'None'}</div>
+      </div>
+      ${ev.location?`
+        <div class="full">
+          <div class="event-field-label">Location</div>
+          <div class="event-field-value">${esc(ev.location)}</div>
+        </div>`:''}
+      ${ev.note?`
+        <div class="full">
+          <div class="event-field-label">Notes</div>
+          <div class="event-field-value" style="font-weight:400;line-height:1.5">${esc(ev.note)}</div>
+        </div>`:''}
+    `;
+    document.getElementById('ev-modal-actions').innerHTML=`
+      <button class="act-btn complete" onclick="Cal.openEditModal('${id}');UI.closeModal('modal-event')">✏ Edit</button>
+      <button class="act-btn danger" onclick="Cal.deleteEvent('${id}');UI.closeModal('modal-event');Cal.render()">✕ Delete</button>
+    `;
+    UI.openModal('modal-event');
+  },
+
+  /* ── EDIT MODAL ──────────────────────────── */
+  openEditModal(id) {
+    const ev=S.events.find(e=>e.id===id); if(!ev) return;
+    document.getElementById('ev-edit-body').innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><div class="exp-label">Title</div>
+          <input class="exp-input" id="ee-title" value="${esc(ev.title)}"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div class="exp-label">Start Date</div>
+            <input class="exp-input" type="date" id="ee-start" value="${ev.startDate}"></div>
+          <div><div class="exp-label">End Date</div>
+            <input class="exp-input" type="date" id="ee-end" value="${ev.endDate||ev.startDate}"></div>
+          <div><div class="exp-label">Start Time</div>
+            <input class="exp-input" type="time" id="ee-stime" value="${ev.startTime||''}"></div>
+          <div><div class="exp-label">End Time</div>
+            <input class="exp-input" type="time" id="ee-etime" value="${ev.endTime||''}"></div>
+        </div>
+        <div><div class="exp-label">Location</div>
+          <input class="exp-input" id="ee-loc" value="${esc(ev.location||'')}"></div>
+        <div><div class="exp-label">Notes</div>
+          <textarea class="exp-input" id="ee-note" style="min-height:60px">${esc(ev.note||'')}</textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div class="exp-label">Category</div>
+            <select class="exp-select" id="ee-cat" style="width:100%">
+              ${S.tabs.map(t=>`<option value="${t.id}"${ev.category===t.id?' selected':''}>${t.name}</option>`).join('')}
+              <option value="event"${ev.category==='event'?' selected':''}>Event</option>
+            </select></div>
+          <div><div class="exp-label">Repeat</div>
+            <select class="exp-select" id="ee-recur" style="width:100%">
+              <option value="none"${ev.recur==='none'?' selected':''}>None</option>
+              <option value="daily"${ev.recur==='daily'?' selected':''}>Daily</option>
+              <option value="weekly"${ev.recur==='weekly'?' selected':''}>Weekly</option>
+              <option value="monthly"${ev.recur==='monthly'?' selected':''}>Monthly</option>
+              <option value="yearly"${ev.recur==='yearly'?' selected':''}>Yearly</option>
+            </select></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="add-btn" onclick="Cal.saveEdit('${id}')">SAVE CHANGES</button>
+          <button class="act-btn" onclick="UI.closeModal('modal-event-edit')">Cancel</button>
+        </div>
+      </div>`;
+    UI.openModal('modal-event-edit');
+  },
+
+  saveEdit(id) {
+    const title=(document.getElementById('ee-title')?.value||'').trim();
+    if(!title) return;
+    this.updateEvent(id,{
+      title,
+      startDate:document.getElementById('ee-start')?.value||today(),
+      endDate:document.getElementById('ee-end')?.value||today(),
+      startTime:document.getElementById('ee-stime')?.value||'',
+      endTime:document.getElementById('ee-etime')?.value||'',
+      location:document.getElementById('ee-loc')?.value||'',
+      note:document.getElementById('ee-note')?.value||'',
+      category:document.getElementById('ee-cat')?.value||'personal',
+      recur:document.getElementById('ee-recur')?.value||'none',
+      allDay:!document.getElementById('ee-stime')?.value,
+    });
+    UI.closeModal('modal-event-edit');
+    this.render();
+    Notifs.showToast('✓ SAVED','Event updated.');
+  },
+
+  /* ── DRAG & DROP ─────────────────────────── */
+  dragOver(dateStr) {
+    document.getElementById('calday_'+dateStr)?.classList.add('drag-target');
+  },
+  dragLeave(dateStr) {
+    document.getElementById('calday_'+dateStr)?.classList.remove('drag-target');
+  },
+  drop(dateStr) {
+    document.querySelectorAll('.cal-cell').forEach(c=>c.classList.remove('drag-target'));
+    const id=Cal._dragEvId; Cal._dragEvId=null;
+    if(!id) return;
+    const ev=S.events.find(e=>e.id===id); if(!ev) return;
+    // Shift event by the date diff
+    const origStart=new Date(ev.startDate+'T12:00:00');
+    const origEnd=new Date((ev.endDate||ev.startDate)+'T12:00:00');
+    const newStart=new Date(dateStr+'T12:00:00');
+    const diff=newStart-origStart;
+    const newEnd=new Date(origEnd.getTime()+diff);
+    this.updateEvent(id,{
+      startDate:dateStr,
+      endDate:newEnd.toISOString().slice(0,10),
+    });
+    this.render();
+    Notifs.showToast('↕ MOVED',`"${ev.title}" moved to ${dateStr}`);
+  },
+
+  /* ── FILTER & NAV ────────────────────────── */
+  setFilter(f) { S.calFilter=f; this.render(); },
+
+  prevMonth() {
+    S.calMonth--; if(S.calMonth<0){S.calMonth=11;S.calYear--;}
+    S.calSelectedDay=null; S.calAddOpen=false; this.render();
+  },
+  nextMonth() {
+    S.calMonth++; if(S.calMonth>11){S.calMonth=0;S.calYear++;}
+    S.calSelectedDay=null; S.calAddOpen=false; this.render();
+  },
+};
+
+/* ═══════════════════════════════════════════
+   GLOBAL CREATOR
+═══════════════════════════════════════════ */
+const Creator = {
+  _type: 'task',        // 'task' | 'event'
+  _tab: null,           // selected tab id
+  _priority: '',        // priority for tasks
+  _boss: false,
+  _alarms: [],          // [{datetime, label}]
+
+  open(prefillDate) {
+    // Default tab to current tab if in tab view
+    this._tab = S.view==='tab' ? S.currentTab : (S.tabs[0]?.id || 'personal');
+    this._priority = '';
+    this._boss = false;
+    this._alarms = [];
+    this._type = 'task';
+
+    this._renderTabGrid();
+    this._renderForm(prefillDate||null);
+
+    // Update FAB
+    document.getElementById('global-fab').classList.add('open');
+    document.getElementById('modal-create').classList.add('open');
+
+    // Focus title after animation
+    setTimeout(()=>document.getElementById('cr-title')?.focus(), 120);
+  },
+
+  close() {
+    document.getElementById('global-fab').classList.remove('open');
+    document.getElementById('modal-create').classList.remove('open');
+  },
+
+  setType(type) {
+    this._type = type;
+    document.getElementById('ctype-task').classList.toggle('active', type==='task');
+    document.getElementById('ctype-event').classList.toggle('active', type==='event');
+    document.getElementById('create-modal-title').textContent = type==='task' ? 'CREATE TASK' : 'CREATE EVENT';
+    this._renderForm();
+  },
+
+  setTab(tabId) {
+    this._tab = tabId;
+    this._renderTabGrid();
+    // Refresh group autocomplete
+    this._updateGroupList();
+  },
+
+  setPriority(pri) {
+    this._priority = this._priority===pri ? '' : pri;
+    document.querySelectorAll('.create-pri-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.pri===this._priority);
+    });
+  },
+
+  toggleBoss() {
+    this._boss = !this._boss;
+    const row = document.getElementById('cr-boss-row');
+    if(row) row.classList.toggle('active', this._boss);
+  },
+
+  addAlarm() {
+    const dt = document.getElementById('cr-alarm-dt')?.value;
+    if(!dt) return;
+    const label = document.getElementById('cr-title')?.value?.trim() || 'Reminder';
+    this._alarms.push({datetime:dt, label});
+    this._renderAlarms();
+  },
+
+  removeAlarm(idx) {
+    this._alarms.splice(idx,1);
+    this._renderAlarms();
+  },
+
+  _renderAlarms() {
+    const wrap = document.getElementById('cr-alarm-pills');
+    if(!wrap) return;
+    wrap.innerHTML = this._alarms.map((a,i)=>`
+      <div class="alarm-pill">
+        ⏰ ${new Date(a.datetime).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+        <button onclick="Creator.removeAlarm(${i})">×</button>
+      </div>`).join('');
+  },
+
+  _renderTabGrid() {
+    const grid = document.getElementById('create-tab-grid');
+    if(!grid) return;
+    const tabs = this._type==='task' ? S.tabs : [
+      ...S.tabs,
+      {id:'event', name:'Event', color:'#00d4aa'},
+    ];
+    grid.innerHTML = tabs.map(t=>`
+      <button class="create-tab-btn${this._tab===t.id?' active':''}"
+        style="${this._tab===t.id?`background:${t.color};border-color:${t.color}`:`border-color:${t.color}55;color:var(--text-mid)`}"
+        onclick="Creator.setTab('${t.id}')"
+        data-tabid="${t.id}">
+        ${t.name}
+      </button>`).join('');
+  },
+
+  _updateGroupList() {
+    const dl = document.getElementById('cr-group-list');
+    if(!dl) return;
+    const groups = S.groups[this._tab]||[];
+    dl.innerHTML = groups.map(g=>`<option value="${esc(g)}">`).join('');
+  },
+
+  _renderForm(prefillDate) {
+    const form = document.getElementById('create-form');
+    if(!form) return;
+    const q = S.cfg.quest;
+    const tod = prefillDate || today();
+    const isTask = this._type==='task';
+
+    form.innerHTML = `
+      <!-- NLP INPUT -->
+      <div>
+        <div class="create-field-label">Quick Entry (natural language)</div>
+        <input class="create-input" id="cr-nlp"
+          placeholder='e.g. "Dentist next Friday at 2pm" or "Gallery opening May 30"'
+          oninput="Creator._parseNLP(this.value)">
+        <div class="create-nlp-preview" id="cr-nlp-preview"></div>
+      </div>
+
+      <!-- TITLE -->
+      <div>
+        <div class="create-field-label">${isTask?(q?'Quest Title':'Task Title'):'Event Title'} *</div>
+        <input class="create-input" id="cr-title" placeholder="${isTask?'What needs to be done?':'What is this event?'}">
+      </div>
+
+      ${isTask ? `
+      <!-- GROUP -->
+      <div>
+        <div class="create-field-label">Group / Subcategory</div>
+        <input class="create-input" id="cr-group" placeholder="General" list="cr-group-list">
+        <datalist id="cr-group-list">
+          ${(S.groups[this._tab]||[]).map(g=>`<option value="${esc(g)}">`).join('')}
+        </datalist>
+      </div>
+
+      <!-- PRIORITY -->
+      <div>
+        <div class="create-field-label">Priority</div>
+        <div class="create-priority-row">
+          ${['urgent','high','medium','low'].map(p=>`
+            <button class="create-pri-btn${this._priority===p?' active':''}" data-pri="${p}"
+              onclick="Creator.setPriority('${p}')">
+              ${p==='urgent'?'⚡ Urgent':p==='high'?'🔴 High':p==='medium'?'🟡 Med':'🟢 Low'}
+            </button>`).join('')}
+        </div>
+      </div>` : `
+      <!-- LOCATION -->
+      <div>
+        <div class="create-field-label">Location</div>
+        <input class="create-input" id="cr-location" placeholder="Where? (optional)">
+      </div>`}
+
+      <!-- DATE / TIME ROW -->
+      <div class="create-input-row">
+        <div>
+          <div class="create-field-label">${isTask?'Due Date':'Start Date'}</div>
+          <input class="create-input" id="cr-date" type="date" value="${tod}">
+        </div>
+        <div>
+          <div class="create-field-label">${isTask?'Due Time':'Start Time'}</div>
+          <input class="create-input" id="cr-time" type="time">
+        </div>
+        ${!isTask ? `
+        <div>
+          <div class="create-field-label">End Date</div>
+          <input class="create-input" id="cr-enddate" type="date" value="${tod}">
+        </div>
+        <div>
+          <div class="create-field-label">End Time</div>
+          <input class="create-input" id="cr-endtime" type="time">
+        </div>` : ''}
+      </div>
+
+      <!-- RECURRENCE -->
+      <div>
+        <div class="create-field-label">Repeat</div>
+        <select class="create-input" id="cr-recur">
+          <option value="none">No repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+
+      <!-- ALARM / NOTIFICATION -->
+      <div>
+        <div class="create-field-label">⏰ Add Reminder</div>
+        <div class="create-alarm-row">
+          <input class="create-input" id="cr-alarm-dt" type="datetime-local" style="flex:1">
+          <button class="notif-sched-btn" onclick="Creator.addAlarm()">+ Set</button>
+        </div>
+        <div id="cr-alarm-pills" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
+      </div>
+
+      <!-- NOTES -->
+      <div>
+        <div class="create-field-label">Notes</div>
+        <textarea class="create-input" id="cr-note" placeholder="Any additional details..."></textarea>
+      </div>
+
+      ${isTask ? `
+      <!-- BOSS TOGGLE -->
+      <div class="create-boss-row${this._boss?' active':''}" id="cr-boss-row" onclick="Creator.toggleBoss()">
+        <span style="font-size:1.1rem">💀</span>
+        <span class="create-boss-label">${q?'Boss Encounter':'Boss Task'} — major / intimidating item</span>
+        <div class="toggle${this._boss?' on':''}" style="pointer-events:none"></div>
+      </div>` : ''}
+
+      <!-- SUBMIT -->
+      <button class="create-submit-btn" onclick="Creator.submit()">
+        ${isTask?(q?'⚔ ACCEPT QUEST':'+ CREATE TASK'):'📅 CREATE EVENT'}
+      </button>
+    `;
+    // Update modal title
+    document.getElementById('create-modal-title').textContent =
+      isTask ? (q?'ACCEPT QUEST':'CREATE TASK') : 'CREATE EVENT';
+    // Re-render tab grid for new type
+    this._renderTabGrid();
+  },
+
+  _parseNLP(text) {
+    const preview = document.getElementById('cr-nlp-preview');
+    if(!text.trim()) { if(preview) preview.classList.remove('visible'); return; }
+    const parsed = Cal.parseNL(text);
+    if(!parsed) return;
+    // Populate fields
+    const titleEl = document.getElementById('cr-title');
+    const dateEl  = document.getElementById('cr-date');
+    const timeEl  = document.getElementById('cr-time');
+    const edEl    = document.getElementById('cr-enddate');
+    if(titleEl && !titleEl.value) titleEl.value = parsed.title;
+    if(dateEl) dateEl.value = parsed.startDate;
+    if(edEl) edEl.value = parsed.startDate;
+    if(timeEl && parsed.startTime) timeEl.value = parsed.startTime;
+    if(preview) {
+      preview.textContent = `→ "${parsed.title}" · ${parsed.startDate}${parsed.startTime?' at '+parsed.startTime:''}`;
+      preview.classList.add('visible');
+    }
+  },
+
+  submit() {
+    const title = (document.getElementById('cr-title')?.value||'').trim();
+    if(!title) {
+      const el = document.getElementById('cr-title');
+      if(el){ el.style.boxShadow='0 0 0 3px rgba(255,59,92,0.4)'; setTimeout(()=>el.style.boxShadow='',700); el.focus(); }
+      return;
+    }
+    const date     = document.getElementById('cr-date')?.value||today();
+    const time     = document.getElementById('cr-time')?.value||'';
+    const endDate  = document.getElementById('cr-enddate')?.value||date;
+    const endTime  = document.getElementById('cr-endtime')?.value||'';
+    const recur    = document.getElementById('cr-recur')?.value||'none';
+    const note     = document.getElementById('cr-note')?.value||'';
+    const group    = document.getElementById('cr-group')?.value?.trim()||'General';
+    const location = document.getElementById('cr-location')?.value||'';
+    const tabId    = this._tab || S.tabs[0]?.id || 'personal';
+
+    if(this._type==='task') {
+      const task = Tasks.add(tabId, title, group, this._priority, date, this._boss, recur);
+      if(task) {
+        if(note) { task.note=note; saveState(); }
+        // Schedule alarms
+        this._alarms.forEach(a=>SchedNotifs.schedule(task.id, a.datetime, a.label||title));
+        // Celebrate add
+        XP.add(3, window.innerWidth/2, window.innerHeight/2);
+        Notifs.showToast('⚔ TASK CREATED', `"${title}" added to ${tabName(tabId)}`);
+      }
+      // Switch to the tab so user sees it
+      if(S.view!=='cal' && S.view!=='dash') UI.switchTab(tabId);
+      else { saveState(); Render.all(); }
+    } else {
+      // Event
+      Cal.addEvent({
+        title, startDate:date, endDate, startTime:time, endTime,
+        allDay:!time, category:tabId, location, note, recur,
+        color: tabColor(tabId),
+      });
+      this._alarms.forEach(a=>{
+        const ev = S.events[S.events.length-1];
+        if(ev) SchedNotifs.schedule(ev.id, a.datetime, a.label||title);
+      });
+      XP.add(3, window.innerWidth/2, window.innerHeight/2);
+      Notifs.showToast('📅 EVENT CREATED', `"${title}" on ${date}`);
+      if(S.view==='cal') Cal.render();
+      else Render.all();
+    }
+
+    this.close();
   },
 };
 
@@ -3579,7 +5463,7 @@ window.addEventListener('resize',()=>{ const c=document.getElementById('confetti
 /* ═══════════════════════════════════════════
    EXPOSE GLOBALS
 ═══════════════════════════════════════════ */
-Object.assign(window,{S,Tasks,Render,UI,DnD,Photos,Search,Backup,Cfg,TabMgr,Undo,Ach,Celebrate,saveState,XP,Recur,Tags,Notifs,LIFETIME_ACH,DAILY_ACH,ACHIEVEMENTS,DashAnims});
+Object.assign(window,{S,Tasks,Render,UI,DnD,Photos,Search,Backup,Cfg,TabMgr,Undo,Ach,Celebrate,saveState,XP,Recur,Tags,Notifs,LIFETIME_ACH,DAILY_ACH,ACHIEVEMENTS,DashAnims,PWA,SchedNotifs,Cal,Creator});
 
 /* ═══════════════════════════════════════════
    INIT
@@ -3587,12 +5471,16 @@ Object.assign(window,{S,Tasks,Render,UI,DnD,Photos,Search,Backup,Cfg,TabMgr,Undo
 loadState();
 seedIfEmpty();
 Cfg.applyAll();
+PWA.init();
 Render.tabBar();
 UI.showDash();
 Render.sidebar();
 XP.updateBar();
-// Check notifications after a short delay (let UI settle first)
-setTimeout(()=>Notifs.checkAndAlert(), 1800);
+// Check notifications and restore scheduled reminders after UI settles
+setTimeout(()=>{
+  Notifs.checkAndAlert();
+  SchedNotifs.restoreAll();
+}, 1800);
 </script>
 </body>
 </html>
