@@ -1236,20 +1236,7 @@ textarea.create-input { resize: vertical; min-height: 60px; }
 }
 .create-input-row .span2 { grid-column: 1 / -1; }
 
-/* NLP preview in create modal */
-.create-nlp-preview {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
-  color: var(--active-color);
-  padding: 4px 8px;
-  background: var(--active-glow2);
-  border-radius: var(--radius-xs);
-  display: none;
-  margin-top: -4px;
-}
-.create-nlp-preview.visible { display: block; }
-
-/* Priority row */
+/* Alarm row */
 .create-priority-row {
   display: flex;
   gap: 6px;
@@ -1529,41 +1516,6 @@ textarea.create-input { resize: vertical; min-height: 60px; }
   cursor:pointer; font-size:1rem; padding:0;
 }
 .cal-quick-add-close:hover { color:var(--text); }
-.cal-quick-add-nlp {
-  width:100%; background:var(--surface3); border:1px dashed var(--border2);
-  border-radius:var(--radius-xs); padding:8px 12px;
-  color:var(--text); font-family:'Syne',sans-serif; font-size:0.85rem;
-  outline:none; margin-bottom:10px;
-  transition:border-color 0.2s, box-shadow 0.2s;
-}
-.cal-quick-add-nlp:focus {
-  border-color:var(--active-color); border-style:solid;
-  box-shadow:0 0 0 3px var(--active-glow2);
-}
-.cal-quick-add-nlp::placeholder { color:var(--text-muted); font-style:italic; }
-.cal-quick-form { display:flex; gap:7px; flex-wrap:wrap; }
-.cal-quick-form input, .cal-quick-form select {
-  background:var(--surface3); border:1px solid var(--border);
-  border-radius:var(--radius-xs); padding:7px 10px;
-  color:var(--text); font-family:'Syne',sans-serif; font-size:0.8rem; outline:none;
-  transition:border-color 0.2s;
-}
-.cal-quick-form input:focus, .cal-quick-form select:focus { border-color:var(--active-color); }
-.cal-quick-form .qf-title { flex:1; min-width:140px; }
-.cal-quick-form .qf-date  { width:130px; }
-.cal-quick-form .qf-time  { width:100px; }
-.cal-quick-form .qf-enddate { width:130px; }
-.cal-quick-form .qf-cat   { width:110px; }
-.cal-quick-form select option { background:var(--surface3); }
-.cal-quick-form-row2 { display:flex; gap:7px; flex-wrap:wrap; width:100%; }
-.cal-quick-form-row2 input { flex:1; min-width:120px; }
-.nlp-preview {
-  font-family:'JetBrains Mono',monospace; font-size:0.65rem;
-  color:var(--active-color); padding:4px 0; margin-bottom:6px;
-  display:none;
-}
-.nlp-preview.visible { display:block; }
-
 /* ── CALENDAR TOOLBAR ── */
 .cal-toolbar {
   display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;
@@ -2326,10 +2278,12 @@ const Undo = {
   push(label, undoFn) {
     this._stack = { label, fn:undoFn };
     clearTimeout(this._timer);
-    document.getElementById('undo-msg').textContent = label;
-    const bar=document.getElementById('undo-bar');
+    const msgEl = document.getElementById('undo-msg');
+    const bar = document.getElementById('undo-bar');
+    if(!msgEl||!bar) return;
+    msgEl.textContent = label;
     bar.classList.remove('visible');
-    void bar.offsetWidth; // reflow to restart animation
+    void bar.offsetWidth;
     bar.classList.add('visible');
     this._timer = setTimeout(()=>this.dismiss(), 5000);
   },
@@ -2467,10 +2421,11 @@ const Ach = {
   },
 
   _show(def, daily) {
-    const toast = document.getElementById('ach-toast');
+    const toast   = document.getElementById('ach-toast');
     const titleEl = document.getElementById('ach-toast-title');
     const nameEl  = document.getElementById('ach-toast-name');
     const descEl  = document.getElementById('ach-toast-desc');
+    if(!toast||!titleEl||!nameEl||!descEl) return;
     titleEl.textContent = daily ? '☀ DAILY BADGE EARNED' : '🏆 ACHIEVEMENT UNLOCKED';
     titleEl.style.color = daily ? 'var(--p-medium)' : 'var(--xp-color)';
     nameEl.textContent  = def.icon + ' ' + def.name;
@@ -2751,8 +2706,11 @@ const Notifs = {
   // Show in-app toast
   showToast(title, body, duration=5000) {
     const toast = document.getElementById('notif-toast');
-    document.getElementById('notif-toast-title').textContent = title;
-    document.getElementById('notif-toast-body').textContent = body;
+    const titleEl = document.getElementById('notif-toast-title');
+    const bodyEl  = document.getElementById('notif-toast-body');
+    if(!toast||!titleEl||!bodyEl) return;
+    titleEl.textContent = title;
+    bodyEl.textContent  = body;
     toast.classList.remove('visible');
     void toast.offsetWidth;
     toast.classList.add('visible');
@@ -2839,13 +2797,16 @@ const XP = {
   updateBar(){
     const needed=XP_PER_LVL*S.level;
     const pct=Math.min(100,(S.xp/needed)*100);
-    document.getElementById('xp-fill').style.width=pct+'%';
-    document.getElementById('xp-badge').textContent=`LVL ${S.level}`;
-    document.getElementById('xp-label').textContent=`${S.xp}/${needed}`;
-    document.getElementById('xp-wrap').style.display=S.cfg.xp?'':'none';
-    // Also update dash if visible
+    const fill=document.getElementById('xp-fill');
+    const badge=document.getElementById('xp-badge');
+    const label=document.getElementById('xp-label');
+    const wrap=document.getElementById('xp-wrap');
+    if(fill) fill.style.width=pct+'%';
+    if(badge) badge.textContent=`LVL ${S.level}`;
+    if(label) label.textContent=`${S.xp}/${needed}`;
+    if(wrap) wrap.style.display=S.cfg.xp?'':'none';
     const df=document.getElementById('dash-xp-fill');
-    if(df) { df.style.width=pct+'%'; }
+    if(df) df.style.width=pct+'%';
   },
   floatText(txt,x,y){
     if(!S.cfg.animations) return;
@@ -2859,6 +2820,7 @@ const XP = {
   showLevelUp(){
     if(!S.cfg.animations) return;
     const b=document.getElementById('levelup-banner');
+    if(!b) return;
     b.textContent=`⭐ LEVEL ${S.level} UNLOCKED!`;
     b.style.display='block';
     setTimeout(()=>b.style.display='none',3000);
@@ -2925,10 +2887,11 @@ const Celebrate = {
 
   showBanner(main,sub,color){
     const ov=document.getElementById('celeb-overlay');
-    document.getElementById('celeb-main').textContent=main;
-    document.getElementById('celeb-sub').textContent=sub;
-    document.getElementById('celeb-main').style.color=color;
-    document.getElementById('celeb-sub').style.color=color;
+    const cm=document.getElementById('celeb-main');
+    const cs=document.getElementById('celeb-sub');
+    if(!ov||!cm||!cs) return;
+    cm.textContent=main; cs.textContent=sub;
+    cm.style.color=color; cs.style.color=color;
     ov.style.display='flex';
     clearTimeout(ov._t);
     ov._t=setTimeout(()=>ov.style.display='none',1400);
@@ -2936,13 +2899,14 @@ const Celebrate = {
 
   updateStreak(){
     const p=document.getElementById('streak-pill');
+    if(!p) return;
     if(S.streak>=2){
       p.style.display='block'; p.style.background=tabColor(S.currentTab);
       p.textContent=`🔥 x${S.streak}`;
       p.style.animation='none'; requestAnimationFrame(()=>p.style.animation='popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)');
     }
   },
-  hideStreak(){ document.getElementById('streak-pill').style.display='none'; },
+  hideStreak(){ const p=document.getElementById('streak-pill'); if(p) p.style.display='none'; },
 
   sparkle(x,y){
     if(!S.cfg.animations) return;
@@ -3532,30 +3496,7 @@ const Render = {
     document.documentElement.style.setProperty('--active-glow',color+'40');
     document.documentElement.style.setProperty('--active-glow2',color+'18');
 
-    let html=`<div class="add-bar">
-      <input class="add-input input-task" id="ai-name" placeholder="${q?'New quest...':'New task...'}" onkeydown="if(event.key==='Enter')UI.addTask()">
-      <input class="add-input input-proj" id="ai-proj" placeholder="${q?'Campaign...':'Group...'}" list="ai-proj-list" onkeydown="if(event.key==='Enter')UI.addTask()">
-      <datalist id="ai-proj-list">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
-      <select class="add-input input-pri" id="ai-pri">
-        <option value="">Priority</option>
-        <option value="urgent">${q?'⚡ Critical':'🔴 Urgent'}</option>
-        <option value="high">${q?'🔥 High':'🟠 High'}</option>
-        <option value="medium">${q?'⚔ Med':'🟡 Med'}</option>
-        <option value="low">${q?'🌿 Low':'🟢 Low'}</option>
-      </select>
-      <input class="add-input input-due" id="ai-due" type="date" title="Due date">
-      <select class="add-input" id="ai-recur" title="Repeat" style="width:110px">
-        <option value="none">No repeat</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="biweekly">Every 2 wks</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
-      <button class="boss-toggle" id="boss-toggle" onclick="this.classList.toggle('on')" title="${q?'Mark as boss encounter':'Mark as boss task'}">💀 ${q?'Boss':'Boss'}</button>
-      <button class="add-btn" onclick="UI.addTask()">${q?'+ ACCEPT QUEST':'+ ADD TASK'}</button>
-    </div>
-    <div class="quick-sort-bar">
+    let html=`<div class="quick-sort-bar">
       <span class="qs-label">Sort:</span>
       ${[
         {v:'manual',    icon:'⠿', label:'Manual'},
@@ -3572,7 +3513,7 @@ const Render = {
     const useGroups=S.currentFilter==='all'&&S.currentSort==='manual';
 
     if(!tasks.length){
-      html+=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-title">${q?'No Quests':'No Tasks'}</div><div class="empty-sub">Add something above to get started.</div></div>`;
+      html+=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-title">${q?'No Quests':'No Tasks'}</div><div class="empty-sub">Tap <strong>+ NEW</strong> or the <strong>⚡ button</strong> to add your first ${q?'quest':'task'}.</div></div>`;
     } else if(useGroups){
       const grouped={};
       groups.forEach(g=>grouped[g]=[]);
@@ -4317,31 +4258,119 @@ const PWA = {
     if('serviceWorker' in navigator) {
       const swCode = `
 const CACHE = 'taskforge-v3';
+const DB_NAME = 'tf-sw-notifs';
+const DB_STORE = 'pending';
+
+// ── IndexedDB helpers inside SW ──
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE, { keyPath: 'id' });
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = rej;
+  });
+}
+async function saveNotif(data) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(data);
+    tx.oncomplete = res; tx.onerror = rej;
+  });
+}
+async function getAllNotifs() {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const req = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).getAll();
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = rej;
+  });
+}
+async function deleteNotif(id) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = res; tx.onerror = rej;
+  });
+}
+
+// ── Check and fire due notifications ──
+async function checkNotifs() {
+  const now = Date.now();
+  const pending = await getAllNotifs();
+  for (const n of pending) {
+    if (n.fireAt <= now) {
+      await self.registration.showNotification(n.title, {
+        body: n.body,
+        icon: n.icon || '',
+        badge: n.badge || '',
+        tag: n.id,
+        renotify: true,
+        requireInteraction: false,
+        data: { id: n.id },
+      });
+      await deleteNotif(n.id);
+    }
+  }
+}
+
 self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
-self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))); });
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(clients.matchAll({type:'window'}).then(cs => {
-    if(cs.length) return cs[0].focus();
-    return clients.openWindow('/');
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim().then(() => {
+    // Start the check loop — every 30 seconds
+    setInterval(checkNotifs, 30000);
+    checkNotifs(); // immediate first check
   }));
 });
-self.addEventListener('message', e => {
-  if(e.data && e.data.type === 'SCHEDULE_NOTIF') {
-    const { id, title, body, delay } = e.data;
-    setTimeout(() => {
-      self.registration.showNotification(title, {
-        body, icon: '/icon-192.png', badge: '/icon-192.png',
-        tag: id, renotify: true,
-        data: { id }
-      });
-    }, delay);
+self.addEventListener('fetch', e => {
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+self.addEventListener('message', async e => {
+  if (!e.data) return;
+  if (e.data.type === 'SCHEDULE_NOTIF') {
+    const { id, title, body, fireAt, icon, badge } = e.data;
+    await saveNotif({ id, title, body, fireAt, icon: icon||'', badge: badge||'' });
+    // Also set a precise setTimeout for when the app IS open
+    const delay = fireAt - Date.now();
+    if (delay > 0 && delay < 86400000) { // within 24h, use setTimeout too
+      setTimeout(async () => {
+        await self.registration.showNotification(title, {
+          body, tag: id, renotify: true, requireInteraction: false,
+          data: { id }
+        });
+        await deleteNotif(id);
+      }, delay);
+    }
   }
+  if (e.data.type === 'CANCEL_NOTIF') {
+    await deleteNotif(e.data.id);
+  }
+  if (e.data.type === 'CHECK_NOW') {
+    await checkNotifs();
+  }
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+      if (cs.length) return cs[0].focus();
+      return clients.openWindow('.');
+    })
+  );
 });`;
       const swBlob = new Blob([swCode], {type:'application/javascript'});
       const swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(()=>{});
+      navigator.serviceWorker.register(swUrl)
+        .then(reg => {
+          // Kick the SW to check immediately on page load
+          setTimeout(() => {
+            if(navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({type:'CHECK_NOW'});
+            }
+          }, 2000);
+        })
+        .catch(()=>{});
     }
 
     // Listen for install prompt
@@ -4404,8 +4433,8 @@ const SchedNotifs = {
   // Schedule a notification for a task at a specific datetime
   async schedule(taskId, datetimeStr, label) {
     if(!datetimeStr) return;
-    const when = new Date(datetimeStr).getTime();
-    const delay = when - Date.now();
+    const fireAt = new Date(datetimeStr).getTime();
+    const delay = fireAt - Date.now();
     if(delay <= 0) { Notifs.showToast('⚠ PAST TIME', 'Please choose a future date and time.'); return; }
 
     const task = S.tasks.find(t=>t.id===taskId);
@@ -4416,19 +4445,37 @@ const SchedNotifs = {
     S.scheduledNotifs[taskId].push({ id:notifId, datetime:datetimeStr, label:label||task.title });
     saveState();
 
-    // Send to service worker if available
-    if(navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
+    // Request permission if not yet granted
+    if(Notifs._supported) {
+      try {
+        if(Notification.permission === 'default') await Notification.requestPermission();
+      } catch(e) {}
+    }
+
+    // Send to service worker with absolute fireAt timestamp
+    const sendToSW = (ctrl) => {
+      ctrl.postMessage({
         type: 'SCHEDULE_NOTIF',
         id: notifId,
         title: '⚡ Task Forge',
         body: label || task.title,
-        delay,
+        fireAt,
       });
-    } else {
-      // Fallback: setTimeout (works while app is open)
+    };
+
+    if(navigator.serviceWorker?.controller) {
+      sendToSW(navigator.serviceWorker.controller);
+    } else if(navigator.serviceWorker) {
+      // Wait for SW to become active
+      navigator.serviceWorker.ready.then(reg => {
+        if(reg.active) sendToSW(reg.active);
+      });
+    }
+
+    // Also set a plain setTimeout fallback while app is open
+    if(delay < 86400000) {
       setTimeout(() => {
-        Notifs.showToast('⏰ REMINDER', label || task.title, 8000);
+        Notifs.showToast('⏰ REMINDER', label || task.title, 10000);
         if(Notifs._supported) {
           try { new Notification('⚡ Task Forge', { body: label||task.title }); } catch(e){}
         }
@@ -4442,6 +4489,10 @@ const SchedNotifs = {
     if(!S.scheduledNotifs[taskId]) return;
     S.scheduledNotifs[taskId] = S.scheduledNotifs[taskId].filter(n=>n.id!==notifId);
     if(!S.scheduledNotifs[taskId].length) delete S.scheduledNotifs[taskId];
+    // Tell SW to cancel too
+    if(navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({ type:'CANCEL_NOTIF', id:notifId });
+    }
     saveState();
     Notifs.showToast('🗑 CANCELLED', 'Reminder removed.');
   },
@@ -4452,16 +4503,23 @@ const SchedNotifs = {
 
   // Re-schedule all saved notifs on app open (for SW fallback)
   restoreAll() {
-    Object.entries(S.scheduledNotifs).forEach(([taskId, notifs]) => {
-      notifs.forEach(n => {
-        const delay = new Date(n.datetime).getTime() - Date.now();
-        if(delay > 0 && navigator.serviceWorker?.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type:'SCHEDULE_NOTIF', id:n.id,
-            title:'⚡ Task Forge', body:n.label, delay,
-          });
-        }
+    if(!navigator.serviceWorker) return;
+    navigator.serviceWorker.ready.then(reg => {
+      const ctrl = reg.active || navigator.serviceWorker.controller;
+      if(!ctrl) return;
+      Object.entries(S.scheduledNotifs).forEach(([taskId, notifs]) => {
+        notifs.forEach(n => {
+          const fireAt = new Date(n.datetime).getTime();
+          if(fireAt > Date.now()) {
+            ctrl.postMessage({
+              type:'SCHEDULE_NOTIF', id:n.id,
+              title:'⚡ Task Forge', body:n.label, fireAt,
+            });
+          }
+        });
       });
+      // Also trigger an immediate check
+      ctrl.postMessage({type:'CHECK_NOW'});
     });
   },
 
@@ -4523,92 +4581,6 @@ const Cal = {
   deleteEvent(id) {
     S.events = S.events.filter(e=>e.id!==id);
     saveState();
-  },
-
-  /* ── NATURAL LANGUAGE PARSER ─────────────── */
-  parseNL(text) {
-    const t = text.trim();
-    if(!t) return null;
-    let title=t, startDate=today(), endDate=today(), startTime='', allDay=true;
-
-    const now = new Date();
-    const todayD = new Date(today()+'T12:00:00');
-
-    // Time pattern: "at 2pm", "at 14:30", "@ 9:00 AM"
-    const timeRx = /(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
-    const timeM = t.match(timeRx);
-    if(timeM) {
-      let h=parseInt(timeM[1]), mn=parseInt(timeM[2]||'0');
-      const ampm=(timeM[3]||'').toLowerCase();
-      if(ampm==='pm'&&h<12) h+=12;
-      if(ampm==='am'&&h===12) h=0;
-      startTime=`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;
-      allDay=false;
-      title=title.replace(timeRx,'').trim();
-    }
-
-    // Relative day keywords
-    const relMap = {
-      'today':0,'tomorrow':1,'yesterday':-1,
-      'next monday':this._nextWeekday(1),'next tuesday':this._nextWeekday(2),
-      'next wednesday':this._nextWeekday(3),'next thursday':this._nextWeekday(4),
-      'next friday':this._nextWeekday(5),'next saturday':this._nextWeekday(6),
-      'next sunday':this._nextWeekday(0),
-      'this monday':this._thisWeekday(1),'this tuesday':this._thisWeekday(2),
-      'this wednesday':this._thisWeekday(3),'this thursday':this._thisWeekday(4),
-      'this friday':this._thisWeekday(5),'this saturday':this._thisWeekday(6),
-      'this sunday':this._thisWeekday(0),
-    };
-    let matched=false;
-    for(const [k,v] of Object.entries(relMap)) {
-      const rx=new RegExp(k,'i');
-      if(t.match(rx)) {
-        const d=new Date(todayD); d.setDate(d.getDate()+v);
-        startDate=d.toISOString().slice(0,10); endDate=startDate;
-        title=title.replace(rx,'').trim();
-        matched=true; break;
-      }
-    }
-
-    // "in N days/weeks"
-    if(!matched) {
-      const inRx=/in\s+(\d+)\s+(day|days|week|weeks)/i;
-      const inM=t.match(inRx);
-      if(inM) {
-        const n=parseInt(inM[1]),unit=inM[2].toLowerCase();
-        const d=new Date(todayD); d.setDate(d.getDate()+(unit.startsWith('week')?n*7:n));
-        startDate=d.toISOString().slice(0,10); endDate=startDate;
-        title=title.replace(inRx,'').trim();
-      }
-    }
-
-    // Explicit date "Jan 15", "January 15", "15 Jan", "1/15", "01/15/2026"
-    const dateRx=/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/;
-    const dateM=t.match(dateRx);
-    if(dateM&&!matched) {
-      const mo=parseInt(dateM[1])-1,dy=parseInt(dateM[2]);
-      const yr=dateM[3]?parseInt(dateM[3])+(parseInt(dateM[3])<100?2000:0):now.getFullYear();
-      const d=new Date(yr,mo,dy);
-      startDate=d.toISOString().slice(0,10); endDate=startDate;
-      title=title.replace(dateRx,'').trim();
-    }
-
-    // Clean up stray words
-    title=title.replace(/^(on|for|about)\s+/i,'').replace(/\s+/g,' ').trim();
-    if(!title) title=t;
-
-    return { title, startDate, endDate, startTime, allDay };
-  },
-
-  _nextWeekday(target) {
-    const cur=new Date().getDay(); // 0=Sun
-    const diff=(target-cur+7)%7||7;
-    return diff;
-  },
-  _thisWeekday(target) {
-    const cur=new Date().getDay();
-    const diff=(target-cur+7)%7;
-    return diff;
   },
 
   /* ── RENDER ─────────────────────────────── */
@@ -4771,10 +4743,6 @@ const Cal = {
           + ADD TO ${new Date(selDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase()}
           <button class="cal-quick-add-close" onclick="S.calAddOpen=false;Cal.render()">×</button>
         </div>
-        <input class="cal-quick-add-nlp" id="cal-nlp" placeholder='Try: "Team meeting at 3pm" or "Dentist next Friday at 10am"'
-          oninput="Cal.previewNL(this.value)"
-          onkeydown="if(event.key==='Enter')Cal.commitNL()">
-        <div class="nlp-preview" id="nlp-preview"></div>
         <div class="cal-quick-form">
           <input class="qf-title" id="qf-title" placeholder="Event title..." value="">
           <input class="qf-date" id="qf-start" type="date" value="${selDate}">
@@ -4875,30 +4843,6 @@ const Cal = {
           </div>
         </div>`:''}
     `;
-  },
-
-  /* ── NL PREVIEW & COMMIT ─────────────────── */
-  previewNL(text) {
-    const parsed=this.parseNL(text);
-    const el=document.getElementById('nlp-preview'); if(!el) return;
-    if(!parsed||!text.trim()){ el.classList.remove('visible'); return; }
-    el.textContent=`→ "${parsed.title}" on ${parsed.startDate}${parsed.startTime?' at '+parsed.startTime:''}`;
-    el.classList.add('visible');
-    // Populate form fields
-    const tf=document.getElementById('qf-title');
-    const sf=document.getElementById('qf-start');
-    const ef=document.getElementById('qf-end');
-    const tm=document.getElementById('qf-time');
-    if(tf&&!tf.value) tf.value=parsed.title;
-    if(sf) sf.value=parsed.startDate;
-    if(ef) ef.value=parsed.startDate;
-    if(tm&&parsed.startTime) tm.value=parsed.startTime;
-  },
-
-  commitNL() {
-    const nlp=document.getElementById('cal-nlp'); if(!nlp) return;
-    this.previewNL(nlp.value);
-    this.saveQuickAdd();
   },
 
   /* ── SAVE QUICK ADD ──────────────────────── */
@@ -5145,7 +5089,8 @@ const Creator = {
     this._type = type;
     document.getElementById('ctype-task').classList.toggle('active', type==='task');
     document.getElementById('ctype-event').classList.toggle('active', type==='event');
-    document.getElementById('create-modal-title').textContent = type==='task' ? 'CREATE TASK' : 'CREATE EVENT';
+    const titleEl2 = document.getElementById('create-modal-title');
+    if(titleEl2) titleEl2.textContent = type==='task' ? 'CREATE TASK' : 'CREATE EVENT';
     this._renderForm();
   },
 
@@ -5223,15 +5168,6 @@ const Creator = {
     const isTask = this._type==='task';
 
     form.innerHTML = `
-      <!-- NLP INPUT -->
-      <div>
-        <div class="create-field-label">Quick Entry (natural language)</div>
-        <input class="create-input" id="cr-nlp"
-          placeholder='e.g. "Dentist next Friday at 2pm" or "Gallery opening May 30"'
-          oninput="Creator._parseNLP(this.value)">
-        <div class="create-nlp-preview" id="cr-nlp-preview"></div>
-      </div>
-
       <!-- TITLE -->
       <div>
         <div class="create-field-label">${isTask?(q?'Quest Title':'Task Title'):'Event Title'} *</div>
@@ -5329,30 +5265,10 @@ const Creator = {
       </button>
     `;
     // Update modal title
-    document.getElementById('create-modal-title').textContent =
-      isTask ? (q?'ACCEPT QUEST':'CREATE TASK') : 'CREATE EVENT';
+    const titleEl = document.getElementById('create-modal-title');
+    if(titleEl) titleEl.textContent = isTask ? (q?'ACCEPT QUEST':'CREATE TASK') : 'CREATE EVENT';
     // Re-render tab grid for new type
     this._renderTabGrid();
-  },
-
-  _parseNLP(text) {
-    const preview = document.getElementById('cr-nlp-preview');
-    if(!text.trim()) { if(preview) preview.classList.remove('visible'); return; }
-    const parsed = Cal.parseNL(text);
-    if(!parsed) return;
-    // Populate fields
-    const titleEl = document.getElementById('cr-title');
-    const dateEl  = document.getElementById('cr-date');
-    const timeEl  = document.getElementById('cr-time');
-    const edEl    = document.getElementById('cr-enddate');
-    if(titleEl && !titleEl.value) titleEl.value = parsed.title;
-    if(dateEl) dateEl.value = parsed.startDate;
-    if(edEl) edEl.value = parsed.startDate;
-    if(timeEl && parsed.startTime) timeEl.value = parsed.startTime;
-    if(preview) {
-      preview.textContent = `→ "${parsed.title}" · ${parsed.startDate}${parsed.startTime?' at '+parsed.startTime:''}`;
-      preview.classList.add('visible');
-    }
   },
 
   submit() {
@@ -5459,6 +5375,47 @@ document.addEventListener('keydown',e=>{
 
 document.getElementById('lightbox').addEventListener('click',e=>{ if(e.target===document.getElementById('lightbox')) UI.closeLightbox(); });
 window.addEventListener('resize',()=>{ const c=document.getElementById('confetti-canvas'); if(c.style.display!=='none'){c.width=window.innerWidth;c.height=window.innerHeight;} });
+
+/* ── SWIPE NAVIGATION ── */
+(()=>{
+  let tx=0, ty=0, swiping=false;
+  const THRESHOLD=60, VERTICAL_MAX=80;
+
+  document.addEventListener('touchstart', e=>{
+    const t=e.touches[0];
+    tx=t.clientX; ty=t.clientY; swiping=true;
+  }, {passive:true});
+
+  document.addEventListener('touchend', e=>{
+    if(!swiping) return;
+    swiping=false;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-tx, dy=t.clientY-ty;
+    // Ignore mostly-vertical swipes
+    if(Math.abs(dy)>VERTICAL_MAX) return;
+    if(Math.abs(dx)<THRESHOLD) return;
+
+    // Build ordered view list: dash, cal, ...tabs
+    const views=['__dash','__cal',...S.tabs.map(t=>t.id)];
+    const cur = S.view==='dash'?'__dash':S.view==='cal'?'__cal':S.currentTab;
+    const idx = views.indexOf(cur);
+    if(idx<0) return;
+
+    if(dx<0 && idx<views.length-1) {
+      // Swipe left → next
+      const next=views[idx+1];
+      if(next==='__dash') UI.showDash();
+      else if(next==='__cal') UI.showCalendar();
+      else UI.switchTab(next);
+    } else if(dx>0 && idx>0) {
+      // Swipe right → previous
+      const prev=views[idx-1];
+      if(prev==='__dash') UI.showDash();
+      else if(prev==='__cal') UI.showCalendar();
+      else UI.switchTab(prev);
+    }
+  }, {passive:true});
+})();
 
 /* ═══════════════════════════════════════════
    EXPOSE GLOBALS
